@@ -28,8 +28,13 @@ export default function Settings() {
   }
 
   return (
-    <div className="wrap" style={{ maxWidth: 640, paddingTop: 32, paddingBottom: 64 }}>
-      <h1 style={{ fontSize: 30, marginBottom: 24 }}>{t("settingsTitle")}</h1>
+    <div className="wrap settings-page">
+      <header className="app-page-header">
+        <span className="eyebrow mono">Personal workspace</span>
+        <h1>{t("settingsTitle")}</h1>
+        <p>Adjust your local profile, accessibility preferences, and device data.</p>
+      </header>
+      <div className="settings-grid">
 
       <Section title={t("settingsProfile")}>
         <div className="field">
@@ -86,16 +91,17 @@ export default function Settings() {
           </div>
         )}
       </Section>
+      </div>
     </div>
   );
 }
 
 function Section({ title, children }) {
   return (
-    <div className="card stack" style={{ marginBottom: 20 }}>
+    <section className="card stack settings-card">
       <h3>{title}</h3>
       {children}
-    </div>
+    </section>
   );
 }
 
@@ -163,7 +169,7 @@ function ShapeGlyph({ shape }) {
 
 function AccessibilityShowcase({ t }) {
   return (
-    <div className="card stack" style={{ marginBottom: 20, borderColor: "var(--green)" }}>
+    <section className="card stack settings-card settings-card-featured">
       <div>
         <h3>{t("a11yShowcaseTitle")}</h3>
         <p className="data-sm" style={{ color: "var(--ink-soft)", marginTop: 4 }}>
@@ -185,6 +191,6 @@ function AccessibilityShowcase({ t }) {
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

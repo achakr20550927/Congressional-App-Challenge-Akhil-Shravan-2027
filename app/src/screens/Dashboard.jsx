@@ -4,13 +4,14 @@ import { useAppState } from "../context/AppStateContext.jsx";
 import { getSessionHistory } from "../lib/storage.js";
 import TaskIcon from "../components/TaskIcon.jsx";
 import { Stagger, StaggerItem } from "../components/motion/primitives.jsx";
+import SignalLattice from "../components/SignalLattice.jsx";
 
 const TASKS = [
-  { key: "rest", titleKey: "taskRestTitle", descKey: "taskRestDesc" },
-  { key: "postural", titleKey: "taskPosturalTitle", descKey: "taskPosturalDesc" },
-  { key: "tap", titleKey: "taskTapTitle", descKey: "taskTapDesc" },
-  { key: "pronation", titleKey: "taskPronationTitle", descKey: "taskPronationDesc" },
-  { key: "spiral", titleKey: "taskSpiralTitle", descKey: "taskSpiralDesc" },
+  { key: "rest", titleKey: "taskRestTitle", descKey: "taskRestDesc", duration: "10 sec" },
+  { key: "postural", titleKey: "taskPosturalTitle", descKey: "taskPosturalDesc", duration: "10 sec" },
+  { key: "tap", titleKey: "taskTapTitle", descKey: "taskTapDesc", duration: "10 sec" },
+  { key: "pronation", titleKey: "taskPronationTitle", descKey: "taskPronationDesc", duration: "10 sec" },
+  { key: "spiral", titleKey: "taskSpiralTitle", descKey: "taskSpiralDesc", duration: "≤30 sec" },
 ];
 
 export default function Dashboard() {
@@ -30,6 +31,7 @@ export default function Dashboard() {
     <div className="wrap dashboard-page">
       <section className="dashboard-hero">
         <div className="dashboard-orb" aria-hidden="true" />
+        <SignalLattice compact className="dashboard-lattice" />
         <div>
           <span className="eyebrow mono">{mode === "clinician" ? "Clinical review workspace" : profile?.name ? `Welcome back, ${profile.name}` : "Your private workspace"}</span>
           <h1>{mode === "clinician" ? "Assessment overview" : t("dashboardTitle")}</h1>
@@ -65,17 +67,19 @@ export default function Dashboard() {
         <p>{mode === "clinician" ? "Use the standardized task instructions and review quality before interpreting a result." : "Each check-in takes about a minute. Your video stays on this device."}</p>
       </div>
       <Stagger className="task-grid" gap={0.06}>
-        {TASKS.map((task) => (
+        {TASKS.map((task, index) => (
           <StaggerItem key={task.key}>
             <button
               className="task-tile"
               onClick={() => navigate(`/capture/${task.key}`)}
             >
+              <div className="task-tile-meta"><span className="mono">0{index + 1}</span><span>{task.duration}</span></div>
               <span className="task-icon-shell"><TaskIcon task={task.key} /></span>
               <h3>{t(task.titleKey)}</h3>
               <p>
                 {t(task.descKey)}
               </p>
+              <span className="task-launch" aria-hidden="true">Begin <b>↗</b></span>
             </button>
           </StaggerItem>
         ))}

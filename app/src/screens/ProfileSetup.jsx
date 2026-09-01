@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppState } from "../context/AppStateContext.jsx";
 import { languages } from "../i18n/strings.js";
-import { BrandMark } from "../components/Brand.jsx";
+import OnboardingShell from "../components/OnboardingShell.jsx";
 
 const CONDITIONS = [
   { value: "", labelKey: null },
@@ -29,14 +29,8 @@ export default function ProfileSetup() {
   }
 
   return (
-    <div className="wrap" style={{ maxWidth: 640, paddingTop: 96, paddingBottom: 96 }}>
-      <div className="stack" style={{ alignItems: "flex-start", marginBottom: 32 }}>
-        <BrandMark size={40} />
-        <h1 style={{ fontSize: 34 }}>{t("profileTitle")}</h1>
-        <p style={{ color: "var(--ink-soft)" }}>{t("profileBody")}</p>
-      </div>
-
-      <form className="card" onSubmit={handleContinue}>
+    <OnboardingShell step={2} eyebrow="Local profile" title={t("profileTitle")} body={t("profileBody")}>
+      <form className="onboarding-form" onSubmit={handleContinue}>
         <div className="field">
           <label htmlFor="displayName">{t("profileNameLabel")}</label>
           <input
@@ -79,6 +73,6 @@ export default function ProfileSetup() {
           {t("continueBtn")}
         </button>
       </form>
-    </div>
+    </OnboardingShell>
   );
 }

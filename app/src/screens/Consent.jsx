@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppState } from "../context/AppStateContext.jsx";
-import { BrandMark } from "../components/Brand.jsx";
+import OnboardingShell from "../components/OnboardingShell.jsx";
 
 /** PRD §10.2 — blocking screen, must be explicitly acknowledged before any camera access. */
 export default function Consent() {
@@ -15,17 +15,14 @@ export default function Consent() {
   }
 
   return (
-    <div className="wrap" style={{ maxWidth: 640, paddingTop: 96, paddingBottom: 96 }}>
-      <div className="stack" style={{ alignItems: "flex-start", marginBottom: 32 }}>
-        <BrandMark size={40} />
-        <h1 style={{ fontSize: 34 }}>{t("consentTitle")}</h1>
+    <OnboardingShell step={1} eyebrow="A clear agreement" title={t("consentTitle")} body={t("consentBody")}>
+      <div className="privacy-proof-grid">
+        <div><strong>0</strong><span>uploads</span></div>
+        <div><strong>Local</strong><span>processing</span></div>
+        <div><strong>You</strong><span>control deletion</span></div>
       </div>
 
-      <div className="card stack" style={{ marginBottom: 24 }}>
-        <p style={{ fontSize: 17, color: "var(--ink-soft)" }}>{t("consentBody")}</p>
-      </div>
-
-      <label className="checkbox-row card" style={{ cursor: "pointer", marginBottom: 24 }}>
+      <label className="checkbox-row card consent-check">
         <input
           type="checkbox"
           checked={checked}
@@ -38,6 +35,6 @@ export default function Consent() {
       <button className="btn btn-primary" style={{ width: "100%" }} disabled={!checked} onClick={handleContinue}>
         {t("consentContinue")}
       </button>
-    </div>
+    </OnboardingShell>
   );
 }

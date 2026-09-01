@@ -19,6 +19,8 @@ export default function TopNav() {
             <NavTab to="/settings">{t("navSettings")}</NavTab>
           </div>
 
+          <span className="local-status nav-desktop-only"><i /> Local only</span>
+
           <div className="mode-switch" role="group" aria-label="Patient or clinician mode">
             <button
               type="button"

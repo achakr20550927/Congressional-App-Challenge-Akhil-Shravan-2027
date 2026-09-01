@@ -51,11 +51,14 @@ export default function ClinicianExport() {
   if (results === null) return <div className="wrap" style={{ paddingTop: 40 }} />;
 
   return (
-    <div className="wrap" style={{ maxWidth: 720, paddingTop: 40, paddingBottom: 64 }}>
-      <h1 style={{ fontSize: 30, marginBottom: 8 }}>{t("clinicianExportTitle")}</h1>
-      <p style={{ color: "var(--ink-soft)", marginBottom: 24 }}>{t("clinicianExportBody")}</p>
+    <div className="wrap export-page">
+      <header className="app-page-header">
+        <span className="eyebrow mono">Portable clinical summary</span>
+        <h1>{t("clinicianExportTitle")}</h1>
+        <p>{t("clinicianExportBody")}</p>
+      </header>
 
-      <div className="card stack" style={{ marginBottom: 20, maxHeight: 360, overflowY: "auto" }}>
+      <div className="card stack export-session-list">
         {sessionGroups.map(([sessionId, group]) => (
           <label key={sessionId} className="checkbox-row" style={{ cursor: "pointer" }}>
             <input type="checkbox" checked={selected.has(sessionId)} onChange={() => toggle(sessionId)} />

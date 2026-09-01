@@ -487,8 +487,11 @@ export default function TaskCapture() {
   const guide = t(meta.guideKey);
 
   return (
-    <div className="wrap" style={{ paddingTop: 32, paddingBottom: 64 }}>
-      <h1 style={{ fontSize: 30, marginBottom: 20 }}>{title}</h1>
+    <div className="wrap capture-page">
+      <header className="capture-page-head">
+        <div><span className="eyebrow mono">Guided assessment · {meta.mode === "canvas" ? "Drawing" : "Camera"}</span><h1>{title}</h1></div>
+        <div className="capture-protocol-meta"><span><i /> On-device</span><span>{meta.mode === "canvas" ? "≤30 sec" : "10 sec"}</span></div>
+      </header>
 
       <div className="capture-layout">
         <div>

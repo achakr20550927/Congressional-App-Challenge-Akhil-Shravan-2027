@@ -85,9 +85,9 @@ export default function History() {
   }
 
   return (
-    <div className="wrap" style={{ paddingTop: 32, paddingBottom: 64 }}>
-      <div className="spread" style={{ marginBottom: 20, flexWrap: "wrap", gap: 16 }}>
-        <h1 style={{ fontSize: 30 }}>{t("historyTitle")}</h1>
+    <div className="wrap history-page">
+      <header className="app-page-header app-page-header-row">
+        <div><span className="eyebrow mono">Longitudinal view</span><h1>{t("historyTitle")}</h1><p>Your own repeated measurements are more useful than a single snapshot.</p></div>
         <div className="row" style={{ gap: 10 }}>
           <button className="btn btn-ghost btn-sm" onClick={handleExportCsv}>
             {t("exportCsv")}
@@ -96,6 +96,12 @@ export default function History() {
             {t("exportPdf")}
           </button>
         </div>
+      </header>
+
+      <div className="history-summary-strip">
+        <div><span className="mono">RECORDINGS</span><strong>{results.length}</strong></div>
+        <div><span className="mono">TASKS</span><strong>{new Set(results.map((item) => item.task)).size}</strong></div>
+        <div><span className="mono">LATEST</span><strong>{new Date(results.at(-1).recordedAt).toLocaleDateString()}</strong></div>
       </div>
 
       <div className="row" style={{ gap: 8, marginBottom: 20, flexWrap: "wrap" }}>

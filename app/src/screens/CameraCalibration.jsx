@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppState } from "../context/AppStateContext.jsx";
 import { startCameraStream, initHandLandmarker, detectFrame, calibrateHandScale, assessLightingQuality, CameraError } from "../lib/capture.js";
-import { BrandMark } from "../components/Brand.jsx";
+import OnboardingShell from "../components/OnboardingShell.jsx";
 
 const CALIBRATION_MS = 2200;
 
@@ -86,15 +86,9 @@ export default function CameraCalibration() {
   }
 
   return (
-    <div className="wrap" style={{ maxWidth: 640, paddingTop: 96, paddingBottom: 96 }}>
-      <div className="stack" style={{ alignItems: "flex-start", marginBottom: 32 }}>
-        <BrandMark size={40} />
-        <h1 style={{ fontSize: 34 }}>{t("cameraTitle")}</h1>
-        <p style={{ color: "var(--ink-soft)" }}>{t("cameraBody")}</p>
-      </div>
-
+    <OnboardingShell step={3} eyebrow="Camera calibration" title={t("cameraTitle")} body={t("cameraBody")}>
       <div
-        className="card"
+        className="card calibration-viewport"
         style={{
           background: "var(--viewport)",
           border: "1px solid var(--viewport-line)",
@@ -162,6 +156,6 @@ export default function CameraCalibration() {
           {t("calibrateContinue")}
         </button>
       )}
-    </div>
+    </OnboardingShell>
   );
 }
