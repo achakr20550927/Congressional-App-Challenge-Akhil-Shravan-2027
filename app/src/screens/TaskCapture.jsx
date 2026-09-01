@@ -21,7 +21,7 @@ import { buildInterpretation } from "../lib/interpretation.js";
 import { saveTaskResult, getSessionHistory } from "../lib/storage.js";
 import {
   createHandOverlay2D,
-  createTremorSignaturePlot,
+  renderMotionMap,
   renderSpectrumChart,
   renderAmplitudeChart,
   pushAmplitudeSample,
@@ -66,6 +66,7 @@ export default function TaskCapture() {
   const overlayCanvasRef = useRef(null);
   const overlay2dRef = useRef(null);
   const landmarkerRef = useRef(null);
+  const streamRef = useRef(null);
   const ampCanvasRef = useRef(null);
   const ampChartRef = useRef(null);
   const ampSeriesRef = useRef([]);
@@ -75,8 +76,7 @@ export default function TaskCapture() {
   const recordStartRef = useRef(0);
   const rafRef = useRef(null);
   const lastVideoTimeRef = useRef(-1);
-  const signatureContainerRef = useRef(null);
-  const signatureRef = useRef(null);
+  const motionMapCanvasRef = useRef(null);
   const spectrumCanvasRef = useRef(null);
 
   // Spiral-only refs
@@ -97,7 +97,7 @@ export default function TaskCapture() {
     () => () => {
       cancelAnimationFrame(rafRef.current);
       overlay2dRef.current?.dispose();
-      signatureRef.current?.dispose();
+      streamRef.current?.getTracks().forEach((track) => track.stop());
     },
     []
   );
@@ -107,6 +107,8 @@ export default function TaskCapture() {
     setCameraError(null);
     try {
       const stream = await startCameraStream({ video: { width: 640, height: 480 }, audio: false });
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = stream;
       const video = videoRef.current;
       video.srcObject = stream;
       await new Promise((res) => (video.onloadedmetadata = res));
@@ -123,6 +125,7 @@ export default function TaskCapture() {
         overlay2dRef.current = createHandOverlay2D(overlayCanvasRef.current);
       }
       setCameraState("ready");
+      cancelAnimationFrame(rafRef.current);
       renderLoop();
     } catch (err) {
       setCameraError(err instanceof CameraError ? err.kind : "unknown");
@@ -227,18 +230,42 @@ export default function TaskCapture() {
     const frames = recordBufferRef.current.filter((f) => f.result.landmarks && f.result.landmarks[handIndex]);
     if (frames.length < 8) return null;
 
+    const durationSec = Math.max(0.1, (frames.at(-1).t - frames[0].t) / 1000);
+    const sampleRate = Math.max(15, Math.min(60, (frames.length - 1) / durationSec));
+    const palmCenter = (lm) => [0, 5, 9, 13, 17].reduce(
+      (p, i) => ({ x: p.x + lm[i].x / 5, y: p.y + lm[i].y / 5 }),
+      { x: 0, y: 0 }
+    );
+
     if (meta.mode === "camera-tap") {
       const samples = frames.map((f) => ({ t: f.t, value: dist(f.result.landmarks[handIndex][4], f.result.landmarks[handIndex][8]) / handScale }));
-      const uniform = resampleToUniformGrid(samples, 30);
-      const { tapCount, tapRateHz, amplitudeDecrementPct } = analyzeTapDecrement(uniform, 30);
-      const { rmsAmplitude } = analyzeTremor(uniform, 30, 0, 0.01);
+      const uniform = resampleToUniformGrid(samples, sampleRate);
+      const { tapCount, tapRateHz, amplitudeDecrementPct } = analyzeTapDecrement(uniform, sampleRate);
+      const { rmsAmplitude } = analyzeTremor(uniform, sampleRate, 0, 0.01);
       return { tapCount, tapRateHz, amplitudeDecrementPct, rmsAmplitude, frequency: 0 };
     }
 
-    const samples = frames.map((f) => ({ t: f.t, value: f.result.landmarks[handIndex][8].x / handScale }));
-    const uniform = resampleToUniformGrid(samples, 30);
+    let samples = frames.map((f) => {
+      const lm = f.result.landmarks[handIndex];
+      const palm = palmCenter(lm);
+      const fingertips = [4, 8, 12, 16, 20];
+      return { t: f.t, value: fingertips.reduce((sum, i) => sum + lm[i].x - palm.x, 0) / fingertips.length / handScale };
+    });
+    if (task === "pronation") {
+      let previous = null;
+      let offset = 0;
+      samples = frames.map((f) => {
+        const lm = f.result.landmarks[handIndex];
+        const raw = Math.atan2(lm[17].y - lm[5].y, lm[17].x - lm[5].x);
+        if (previous != null && raw - previous > Math.PI) offset -= Math.PI * 2;
+        if (previous != null && raw - previous < -Math.PI) offset += Math.PI * 2;
+        previous = raw;
+        return { t: f.t, value: raw + offset };
+      });
+    }
+    const uniform = resampleToUniformGrid(samples, sampleRate);
     const [minHz, maxHz] = meta.band;
-    const { frequency, rmsAmplitude, spectrum, peakProminence, tremorBandPowerRatio } = analyzeTremor(uniform, 30, minHz, maxHz);
+    const { frequency, rmsAmplitude, spectrum, peakProminence, tremorBandPowerRatio } = analyzeTremor(uniform, sampleRate, minHz, maxHz);
     return { frequency, rmsAmplitude, spectrum, peakProminence, tremorBandPowerRatio };
   }
 
@@ -304,7 +331,9 @@ export default function TaskCapture() {
       primary.spectrum || [],
       recordBufferRef.current.map((f) => {
         const lm = f.result.landmarks && f.result.landmarks[0];
-        return lm ? { x: lm[8].x - 0.5, y: lm[8].y - 0.5, z: lm[8].z || 0 } : null;
+        if (!lm) return null;
+        const palm = [0, 5, 9, 13, 17].reduce((p, i) => ({ x: p.x + lm[i].x / 5, y: p.y + lm[i].y / 5 }), { x: 0, y: 0 });
+        return { x: (lm[8].x - palm.x) / handScale, y: (lm[8].y - palm.y) / handScale };
       }).filter(Boolean),
       primary.peakProminence || 0,
       quality
@@ -327,6 +356,8 @@ export default function TaskCapture() {
       confidence: classification.confidence,
       rating: interpretation.rating.tier,
       qualityOk: quality ? quality.qualityOk : true,
+      captureQuality: quality,
+      peakProminence,
     };
 
     let saved = true;
@@ -341,10 +372,7 @@ export default function TaskCapture() {
 
     requestAnimationFrame(() => {
       if (spectrumCanvasRef.current && spectrum.length) renderSpectrumChart(spectrumCanvasRef.current, spectrum);
-      if (signatureContainerRef.current && trajectoryPoints.length > 3) {
-        signatureRef.current?.dispose();
-        signatureRef.current = createTremorSignaturePlot(signatureContainerRef.current, trajectoryPoints);
-      }
+      if (motionMapCanvasRef.current && trajectoryPoints.length > 3) renderMotionMap(motionMapCanvasRef.current, trajectoryPoints);
     });
   }
 
@@ -562,7 +590,7 @@ export default function TaskCapture() {
           )}
 
           {flow === "result" && result && (
-            <ResultCard result={result} appMode={appMode} saveError={saveError} t={t} spectrumCanvasRef={spectrumCanvasRef} signatureContainerRef={signatureContainerRef} />
+            <ResultCard result={result} appMode={appMode} saveError={saveError} t={t} spectrumCanvasRef={spectrumCanvasRef} motionMapCanvasRef={motionMapCanvasRef} />
           )}
         </div>
       </div>
@@ -619,7 +647,7 @@ export default function TaskCapture() {
   );
 }
 
-function ResultCard({ result, appMode, saveError, t, spectrumCanvasRef, signatureContainerRef }) {
+function ResultCard({ result, appMode, saveError, t, spectrumCanvasRef, motionMapCanvasRef }) {
   const isTap = result.task === "tap";
   const isSpiral = result.task === "spiral";
   const isClinician = appMode === "clinician";
@@ -639,18 +667,13 @@ function ResultCard({ result, appMode, saveError, t, spectrumCanvasRef, signatur
         </div>
       )}
 
-      {/* 3D tremor-signature plot only makes sense when a camera trajectory
-          was recorded — the spiral task has none, so don't render an empty box. */}
-      <div
-        ref={signatureContainerRef}
-        style={{
-          width: "100%",
-          aspectRatio: "1/1",
-          marginBottom: 12,
-          marginTop: 14,
-          display: result.trajectoryPoints && result.trajectoryPoints.length > 3 ? "block" : "none",
-        }}
-      />
+      {result.trajectoryPoints?.length > 3 && (
+        <figure className="motion-map-card">
+          <div className="spread"><strong>Motion density map</strong><span className="mono">START · END</span></div>
+          <canvas ref={motionMapCanvasRef} aria-label="Recorded fingertip motion density map" />
+          <figcaption>Hand-relative movement across this recording. Brighter regions show where the fingertip spent more time.</figcaption>
+        </figure>
+      )}
 
       <div className="grid-2" style={{ gap: 10 }}>
         {!isTap && !isSpiral && <MetricCard label={t("metricFrequency")} value={result.frequencyHz ? result.frequencyHz.toFixed(2) : "—"} unit="Hz" />}
@@ -755,8 +778,8 @@ function ResultCard({ result, appMode, saveError, t, spectrumCanvasRef, signatur
               </p>
               <p className="data-sm" style={{ color: "var(--ink-soft)", marginTop: 4, fontStyle: "italic" }}>
                 {t("mlRealNote")}
-                {result.classification.modelCrossCheck.metrics
-                  ? ` ${t("mlAucNote")} ${result.classification.modelCrossCheck.metrics.subjectAuc} (${t("mlPerPerson")}), ${result.classification.modelCrossCheck.metrics.recordingAuc} (${t("mlPerRecording")}).`
+                {result.classification.modelCrossCheck.metrics?.subjectAuc != null
+                  ? ` ${t("mlAucNote")} ${result.classification.modelCrossCheck.metrics.subjectAuc} (${t("mlPerPerson")})${result.classification.modelCrossCheck.metrics.recordingAuc != null ? `, ${result.classification.modelCrossCheck.metrics.recordingAuc} (${t("mlPerRecording")})` : ""}.`
                   : ""}
               </p>
             </div>

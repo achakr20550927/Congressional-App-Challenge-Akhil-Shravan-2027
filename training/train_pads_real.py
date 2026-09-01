@@ -65,7 +65,11 @@ def analyze_channel(x, fs=FS, lo=2.0, hi=15.0, tlo=3.0, thi=7.0):
     n = len(x)
     if n < 8:
         return None
-    x = x - np.mean(x)
+    # Match the browser pipeline: remove the least-squares linear trend so
+    # slow arm/camera drift cannot dominate the frequency features.
+    sample_index = np.arange(n, dtype=float)
+    slope, intercept = np.polyfit(sample_index, x, 1)
+    x = x - (slope * sample_index + intercept)
     w = hann(n)
     nfft = 1 << int(np.ceil(np.log2(n)))
     X = np.fft.rfft(x * w, n=nfft)

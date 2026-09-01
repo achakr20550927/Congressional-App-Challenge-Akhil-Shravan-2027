@@ -41,6 +41,9 @@ export async function initHandLandmarker(opts = {}) {
         },
         runningMode: "VIDEO",
         numHands,
+        minHandDetectionConfidence: 0.65,
+        minHandPresenceConfidence: 0.65,
+        minTrackingConfidence: 0.7,
       });
     } catch (err) {
       if (delegate === "GPU") {
@@ -53,6 +56,9 @@ export async function initHandLandmarker(opts = {}) {
           },
           runningMode: "VIDEO",
           numHands,
+          minHandDetectionConfidence: 0.65,
+          minHandPresenceConfidence: 0.65,
+          minTrackingConfidence: 0.7,
         });
       }
       throw err;

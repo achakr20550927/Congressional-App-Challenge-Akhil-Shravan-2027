@@ -1,12 +1,14 @@
 # NeuraTrack model training
 
-Trains the small on-device classifier the app ships in
-`app/public/models/neuratrack-model.json`.
+Trains the small on-device classifiers shipped in `app/public/models/`.
 
 ## What's here
 
 - `train_classifier.py` — the trainer. Multinomial logistic regression, two
   heads: `signal_label` and `safety_rating`.
+- `train_pads_real.py` — the current rest/postural cross-check, trained from
+  3,980 recordings across 398 real PADS participants with subject-separated
+  five-fold validation.
 - `clean_labeled.csv` — the 3,000 labeled feature records extracted from the
   workbook (the sheet also contained ~10k unlabeled raw-sample rows, which are
   not used for classification).
@@ -25,7 +27,16 @@ Trains the small on-device classifier the app ships in
 5. Rebuild the app (`cd ../app && npm run build`). No app code changes needed —
    `model.js` loads whatever is at that path.
 
-## Honesty
+## Current validation and limits
+
+The PADS cross-check reaches a subject-level ROC AUC of 0.733. Participants
+never cross validation folds. It uses only sensor-transferable frequency-shape
+features and is deliberately not treated as a diagnosis or as the primary
+webcam decision path: PADS was captured with smartwatches, not this camera
+protocol. A prospective, consented, clinician-labeled webcam dataset is still
+required for clinical validation.
+
+## Legacy synthetic model
 
 The shipped v1.0.0 model was trained on the workbook's **synthetic** feature
 data (`is_synthetic=True`). Held-out test accuracy: signal_label ≈ 0.91,

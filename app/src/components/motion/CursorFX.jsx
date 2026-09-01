@@ -8,8 +8,8 @@ import { useEffect, useRef, useState } from "react";
  * The flower spring-trails the pointer and spins slowly; a precise dot rides
  * exactly on the hotspot. Grows on interactive targets; [data-magnetic]
  * elements pull it toward their center. Never rendered on touch devices or
- * under prefers-reduced-motion, and the native cursor is only hidden when
- * ours is active.
+ * under prefers-reduced-motion. The native cursor remains visible; these are
+ * decorative companions, never a replacement for the system pointer.
  */
 export default function CursorFX() {
   const dotRef = useRef(null);

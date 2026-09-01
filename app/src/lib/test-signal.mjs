@@ -49,6 +49,18 @@ function approx(a, b, eps) {
   assert(approx(frequency, 4.5, 0.3), `rest tremor: expected ~4.5Hz, got ${frequency}`);
 }
 
+// --- analyzeTremor: off-bin rhythm remains accurate despite linear camera drift ---
+{
+  const fs = 30;
+  const target = 4.73;
+  const n = fs * 10;
+  const samples = Array.from({ length: n }, (_, i) =>
+    0.03 * Math.sin((2 * Math.PI * target * i) / fs) + i * 0.0002
+  );
+  const { frequency } = analyzeTremor(samples, fs, 2, 15);
+  assert(approx(frequency, target, 0.12), `off-bin drift: expected ~${target}Hz, got ${frequency}`);
+}
+
 // --- analyzeTremor: still hand, near-zero amplitude ---
 {
   const fs = 60;

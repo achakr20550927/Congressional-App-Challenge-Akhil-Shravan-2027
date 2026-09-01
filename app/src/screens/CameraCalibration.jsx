@@ -16,14 +16,20 @@ export default function CameraCalibration() {
   const [errorKind, setErrorKind] = useState(null);
   const rafRef = useRef(null);
   const landmarkerRef = useRef(null);
+  const streamRef = useRef(null);
 
-  useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
+  useEffect(() => () => {
+    cancelAnimationFrame(rafRef.current);
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+  }, []);
 
   async function start() {
     setState("requesting");
     setErrorKind(null);
     try {
       const stream = await startCameraStream({ video: { width: 640, height: 480 }, audio: false });
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = stream;
       const video = videoRef.current;
       video.srcObject = stream;
       await new Promise((res) => (video.onloadedmetadata = res));

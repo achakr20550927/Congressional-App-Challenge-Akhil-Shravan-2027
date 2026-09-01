@@ -211,6 +211,7 @@ export function createHandOverlay2D(canvas) {
   const CALM = [62, 111, 166]; // #3E6FA6
   const HOT = [232, 162, 61]; // #E8A23D
   const history = [Array.from({ length: 21 }, () => []), Array.from({ length: 21 }, () => [])];
+  const smoothed = [Array(21).fill(null), Array(21).fill(null)];
 
   function jitterOf(h) {
     if (h.length < 3) return 0;
@@ -238,23 +239,36 @@ export function createHandOverlay2D(canvas) {
       const lm = lmList[hand];
       if (!lm) {
         history[hand].forEach((arr) => (arr.length = 0));
+        smoothed[hand].fill(null);
         continue;
       }
+      const stable = lm.map((point, i) => {
+        const previous = smoothed[hand][i];
+        const next = previous
+          ? { x: previous.x * 0.55 + point.x * 0.45, y: previous.y * 0.55 + point.y * 0.45, z: previous.z * 0.55 + (point.z || 0) * 0.45 }
+          : { x: point.x, y: point.y, z: point.z || 0 };
+        smoothed[hand][i] = next;
+        return next;
+      });
       ctx.strokeStyle = "rgba(127,179,163,0.8)";
       ctx.lineWidth = 2;
       for (const [a, b] of HAND_CONNECTIONS) {
         ctx.beginPath();
-        ctx.moveTo(lm[a].x * w, lm[a].y * h);
-        ctx.lineTo(lm[b].x * w, lm[b].y * h);
+        ctx.moveTo(stable[a].x * w, stable[a].y * h);
+        ctx.lineTo(stable[b].x * w, stable[b].y * h);
         ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(((stable[a].x + stable[b].x) / 2) * w, ((stable[a].y + stable[b].y) / 2) * h, 2, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(202,238,255,.7)";
+        ctx.fill();
       }
       for (let i = 0; i < 21; i++) {
         const hist = history[hand][i];
-        hist.push({ x: lm[i].x, y: lm[i].y });
+        hist.push({ x: stable[i].x, y: stable[i].y });
         if (hist.length > 16) hist.shift();
         const t = Math.min(1, jitterOf(hist) / 0.008);
         ctx.beginPath();
-        ctx.arc(lm[i].x * w, lm[i].y * h, 4 + t * 4, 0, Math.PI * 2);
+        ctx.arc(stable[i].x * w, stable[i].y * h, 4 + t * 4, 0, Math.PI * 2);
         ctx.fillStyle = heat(t);
         ctx.fill();
       }
@@ -267,6 +281,45 @@ export function createHandOverlay2D(canvas) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     },
   };
+}
+
+/** Renders an interpretable, hand-relative fingertip density map. */
+export function renderMotionMap(canvas, points) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const width = Math.max(420, canvas.clientWidth || 480);
+  const height = Math.round(width * 0.62);
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  canvas.style.aspectRatio = `${width}/${height}`;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+  const pad = 30;
+  ctx.fillStyle = "#071522";
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = "rgba(148,203,230,.12)";
+  for (let i = 0; i <= 8; i++) {
+    const x = pad + ((width - pad * 2) * i) / 8;
+    ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, height - pad); ctx.stroke();
+  }
+  for (let i = 0; i <= 5; i++) {
+    const y = pad + ((height - pad * 2) * i) / 5;
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(width - pad, y); ctx.stroke();
+  }
+  if (!points?.length) return;
+  const xs = points.map((p) => p.x), ys = points.map((p) => p.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  const rx = maxX - minX || 1, ry = maxY - minY || 1;
+  const plotted = points.map((p) => ({ x: pad + ((p.x - minX) / rx) * (width - pad * 2), y: pad + ((p.y - minY) / ry) * (height - pad * 2) }));
+  for (const p of plotted) {
+    const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 18);
+    glow.addColorStop(0, "rgba(251,191,102,.075)"); glow.addColorStop(1, "rgba(74,182,228,0)");
+    ctx.fillStyle = glow; ctx.fillRect(p.x - 18, p.y - 18, 36, 36);
+  }
+  ctx.beginPath();
+  plotted.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+  ctx.strokeStyle = "rgba(126,214,246,.78)"; ctx.lineWidth = 1.6; ctx.lineJoin = "round"; ctx.stroke();
+  const mark = (p, color) => { ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill(); };
+  mark(plotted[0], "#7ed6f6"); mark(plotted[plotted.length - 1], "#fbbf66");
 }
 
 const chartFont = { family: "'IBM Plex Mono', monospace", size: 10 };

@@ -59,6 +59,20 @@ function mean(arr) {
   return s / arr.length;
 }
 
+function linearDetrend(samples) {
+  const n = samples.length;
+  const xMean = (n - 1) / 2;
+  const yMean = mean(samples);
+  let numerator = 0, denominator = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = i - xMean;
+    numerator += dx * (samples[i] - yMean);
+    denominator += dx * dx;
+  }
+  const slope = denominator ? numerator / denominator : 0;
+  return samples.map((value, i) => value - (yMean + slope * (i - xMean)));
+}
+
 /** Hann window — reduces spectral leakage from the non-periodic recording window. */
 function hann(n) {
   const w = new Float64Array(n);
@@ -81,8 +95,7 @@ export function analyzeTremor(samples, sampleRateHz, minHz = 2, maxHz = 15) {
   const n = samples.length;
   if (n < 4) return { frequency: 0, magnitude: 0, rmsAmplitude: 0, spectrum: [], peakProminence: 0 };
 
-  const m = mean(samples);
-  const detrended = samples.map((v) => v - m);
+  const detrended = linearDetrend(samples);
 
   let rmsSum = 0;
   for (const v of detrended) rmsSum += v * v;
@@ -97,7 +110,7 @@ export function analyzeTremor(samples, sampleRateHz, minHz = 2, maxHz = 15) {
   fftInPlace(re, im);
 
   const spectrum = [];
-  let bestFreq = 0, bestMag = -Infinity;
+  let bestFreq = 0, bestMag = -Infinity, bestK = -1;
   const half = nfft / 2;
   for (let k = 1; k < half; k++) {
     const freq = (k * sampleRateHz) / nfft;
@@ -107,11 +120,21 @@ export function analyzeTremor(samples, sampleRateHz, minHz = 2, maxHz = 15) {
       if (mag > bestMag) {
         bestMag = mag;
         bestFreq = freq;
+        bestK = k;
       }
     }
   }
 
   const magnitude = bestMag === -Infinity ? 0 : bestMag;
+
+  if (bestK > 1 && bestK < half - 1) {
+    const left = Math.hypot(re[bestK - 1], im[bestK - 1]);
+    const center = Math.hypot(re[bestK], im[bestK]);
+    const right = Math.hypot(re[bestK + 1], im[bestK + 1]);
+    const denom = left - 2 * center + right;
+    const delta = denom ? Math.max(-0.5, Math.min(0.5, 0.5 * (left - right) / denom)) : 0;
+    bestFreq = ((bestK + delta) * sampleRateHz) / nfft;
+  }
 
   // Peak prominence: what fraction of the in-band spectrum's total energy is
   // concentrated in the single dominant bin. A real oscillation concentrates

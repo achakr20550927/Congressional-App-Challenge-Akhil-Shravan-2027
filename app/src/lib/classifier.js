@@ -334,16 +334,12 @@ function classifySpiral(f) {
  */
 export function classifyPattern(clf, featureVector, context = {}) {
   // ARCHITECTURE (why rules are primary, not the trained model):
-  // The shipped model was trained on SYNTHETIC features whose distribution
-  // does not match real webcam-derived features — most sharply in
-  // spectral_concentration (synthetic ~0.5-3.0 vs the app's real 0.1-0.3
-  // energy-concentration measure). Fed real inputs, the model collapses to
-  // the majority "steady" class. The rule engine's thresholds, by contrast,
-  // are hand-calibrated to the real feature scales, so it discriminates
-  // correctly on actual recordings. So the rules decide the finding + rating,
-  // and the trained model rides along as an honest, clearly-labeled ML
-  // cross-check (shown in clinician mode). Retraining on REAL labeled webcam
-  // data (training/README.md) is what would let the model take the lead.
+  // The cross-check model is trained on the real PADS movement dataset, but
+  // PADS uses different sensors and does not provide labels for this webcam
+  // capture protocol. The task-specific, webcam-scale rules therefore remain
+  // primary; the model is shown separately in clinician mode. A prospective,
+  // consented and clinician-labeled webcam dataset is required before ML can
+  // safely become the primary decision path.
   const order = clf?.order || FEATURE_ORDER;
   const f = {};
   order.forEach((k, i) => (f[k] = featureVector[i] ?? 0));
