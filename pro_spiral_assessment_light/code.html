@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURO_COMMAND - Kinematic Spiral Assessment</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Config Verbatim -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-fixed": "#9cf0ff",
+                    "on-primary": "#ffffff",
+                    "on-error": "#ffffff",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-container": "#8ebdf9",
+                    "on-tertiary-fixed-variant": "#444749",
+                    "error": "#ba1a1a",
+                    "on-surface-variant": "#42474f",
+                    "on-background": "#0b1c30",
+                    "secondary-container": "#00e3fd",
+                    "on-secondary-fixed-variant": "#004f58",
+                    "background": "#f8f9ff",
+                    "primary-fixed-dim": "#a0c9ff",
+                    "tertiary-fixed-dim": "#c4c7c9",
+                    "surface-dim": "#cbdbf5",
+                    "surface-container-low": "#eff4ff",
+                    "surface-container-highest": "#d3e4fe",
+                    "on-primary-fixed-variant": "#07497d",
+                    "surface-container-high": "#dce9ff",
+                    "primary-container": "#0f4c81",
+                    "tertiary-fixed": "#e0e3e5",
+                    "outline-variant": "#c2c7d1",
+                    "secondary": "#006875",
+                    "on-secondary-container": "#00616d",
+                    "inverse-surface": "#213145",
+                    "surface": "#f8f9ff",
+                    "primary-fixed": "#d2e4ff",
+                    "on-tertiary-fixed": "#191c1e",
+                    "surface-bright": "#f8f9ff",
+                    "outline": "#727780",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "secondary-fixed-dim": "#00daf3",
+                    "tertiary": "#313436",
+                    "inverse-on-surface": "#eaf1ff",
+                    "surface-container": "#e5eeff",
+                    "on-secondary-fixed": "#001f24",
+                    "inverse-primary": "#a0c9ff",
+                    "error-container": "#ffdad6",
+                    "tertiary-container": "#474b4d",
+                    "surface-tint": "#2d6197",
+                    "on-surface": "#0b1c30",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed": "#001c37",
+                    "surface-variant": "#d3e4fe",
+                    "primary": "#00355f",
+                    "on-tertiary-container": "#b8bbbc"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "margin": "32px",
+                    "container-max": "1440px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "body-md": ["Hanken Grotesk"],
+                    "headline-lg-mobile": ["Hanken Grotesk"],
+                    "body-lg": ["Hanken Grotesk"],
+                    "headline-lg": ["Hanken Grotesk"],
+                    "headline-sm": ["Hanken Grotesk"],
+                    "headline-md": ["Hanken Grotesk"],
+                    "data-display": ["JetBrains Mono"],
+                    "data-label": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "30px", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "data-display": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                    "data-label": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #F8FAFC;
+            overflow: hidden;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 0.5px solid #E2E8F0;
+        }
+        .tactical-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, #e2e8f0 0.5px, transparent 0.5px),
+                linear-gradient(to bottom, #e2e8f0 0.5px, transparent 0.5px);
+        }
+        .canvas-container {
+            cursor: crosshair;
+            touch-action: none;
+        }
+        .status-accent {
+            width: 2px;
+            background: #006875;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-background selection:bg-secondary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-md border-b-[0.5px] border-outline-variant flex justify-between items-center px-margin h-16 w-full">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" style="font-size: 24px;">clinical_notes</span>
+<h1 class="font-data-display text-data-display font-bold text-primary uppercase tracking-wider">NEURO_COMMAND</h1>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex gap-6 items-center">
+<span class="text-outline font-data-label uppercase">SESS_ID: 992-X</span>
+<span class="text-outline font-data-label uppercase">STABILITY: OPTIMAL</span>
+</div>
+<button class="px-4 py-2 border-[0.5px] border-primary text-primary font-data-label uppercase hover:bg-surface-container-low transition-colors active:opacity-80">
+                PATIENT_MODE
+            </button>
+</div>
+</header>
+<main class="pt-16 pb-16 min-h-screen flex flex-col md:flex-row relative">
+<!-- Sidebar HUD: Stats -->
+<aside class="w-full md:w-80 glass-panel z-10 p-6 flex flex-col gap-6 overflow-y-auto">
+<div class="flex flex-col gap-1">
+<span class="font-data-label text-outline uppercase">Assessment Engine</span>
+<h2 class="font-headline-sm text-headline-sm text-primary">KINEMATIC_SPIRAL</h2>
+</div>
+<!-- Deviation Widget -->
+<div class="bg-white p-4 border-[0.5px] border-outline-variant flex flex-col gap-2 relative">
+<div class="status-accent absolute left-0 top-0 bottom-0"></div>
+<div class="flex justify-between items-center">
+<span class="font-data-label text-outline uppercase">Deviation Error</span>
+<span class="material-symbols-outlined text-secondary" style="font-size: 16px;">monitoring</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-data-display text-2xl font-bold text-primary" id="deviation-val">1.24</span>
+<span class="font-data-label text-secondary">%</span>
+</div>
+<div class="w-full bg-surface-container-low h-1 mt-2">
+<div class="bg-secondary h-full transition-all duration-300" style="width: 24%"></div>
+</div>
+</div>
+<!-- Symmetry Index -->
+<div class="bg-white p-4 border-[0.5px] border-outline-variant flex flex-col gap-2 relative">
+<div class="status-accent absolute left-0 top-0 bottom-0 bg-primary"></div>
+<div class="flex justify-between items-center">
+<span class="font-data-label text-outline uppercase">Symmetry Index</span>
+<span class="material-symbols-outlined text-primary" style="font-size: 16px;">neurology</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-data-display text-2xl font-bold text-primary">0.92</span>
+<span class="font-data-label text-outline">κ</span>
+</div>
+</div>
+<!-- Real-time Velocity Graph Placeholder -->
+<div class="bg-white p-4 border-[0.5px] border-outline-variant flex flex-col gap-4 flex-grow">
+<span class="font-data-label text-outline uppercase">Angular Velocity</span>
+<div class="flex-grow flex items-end gap-1 h-32">
+<div class="bg-surface-container-highest flex-1 h-[40%]"></div>
+<div class="bg-surface-container-highest flex-1 h-[60%]"></div>
+<div class="bg-surface-container-highest flex-1 h-[55%]"></div>
+<div class="bg-secondary flex-1 h-[85%]"></div>
+<div class="bg-surface-container-highest flex-1 h-[70%]"></div>
+<div class="bg-surface-container-highest flex-1 h-[45%]"></div>
+<div class="bg-surface-container-highest flex-1 h-[30%]"></div>
+</div>
+<div class="flex justify-between font-data-label text-outline text-[9px]">
+<span>0ms</span>
+<span>500ms</span>
+<span>1000ms</span>
+</div>
+</div>
+<button class="w-full bg-primary text-white py-4 font-data-label uppercase tracking-widest hover:brightness-110 active:scale-[0.98] transition-all">
+                FINALIZE_SESSION
+            </button>
+</aside>
+<!-- Main Canvas Area -->
+<section class="flex-grow relative bg-[#F8FAFC] tactical-grid flex items-center justify-center p-8">
+<!-- Central Spiral Template -->
+<div class="relative w-full max-w-2xl aspect-square flex items-center justify-center">
+<!-- Background Spiral Visualizer -->
+<svg class="absolute inset-0 w-full h-full opacity-10 pointer-events-none" viewbox="0 0 200 200">
+<path d="M 100 100 m 0 0 c 0 0 5 -5 10 0 c 5 5 0 15 -10 15 c -15 0 -25 -15 -15 -30 c 15 -20 45 -15 50 10 c 5 35 -35 55 -70 35 c -45 -25 -40 -85 5 -100 c 60 -20 115 50 80 115" fill="none" stroke="#00355f" stroke-dasharray="2,2" stroke-width="0.5"></path>
+</svg>
+<!-- Interactive Drawing Canvas -->
+<canvas class="w-full h-full glass-panel relative z-20 cursor-crosshair shadow-sm" id="assessment-canvas"></canvas>
+<!-- Tool Overlay -->
+<div class="absolute bottom-6 left-6 z-30 flex gap-2">
+<button class="p-3 bg-white border-[0.5px] border-outline-variant hover:bg-surface-container-low transition-colors" id="clear-btn">
+<span class="material-symbols-outlined text-outline">delete</span>
+</button>
+<button class="p-3 bg-white border-[0.5px] border-outline-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-secondary">stylus</span>
+</button>
+</div>
+<!-- HUD Calibration Marks -->
+<div class="absolute top-4 left-4 z-30 font-data-label text-outline text-[10px] pointer-events-none">
+                    X: <span id="pos-x">000</span><br/>
+                    Y: <span id="pos-y">000</span>
+</div>
+</div>
+</section>
+<!-- Right System Panel (Optional/Secondary) -->
+<aside class="hidden lg:flex w-64 border-l-[0.5px] border-outline-variant flex-col p-6 gap-8">
+<div class="flex flex-col gap-2">
+<span class="font-data-label text-outline uppercase">Active Sensors</span>
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="font-body-md text-on-surface">Pressure (812Hz)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="font-body-md text-on-surface">Tilt/Altitude</span>
+</div>
+<div class="flex items-center gap-2 opacity-50">
+<div class="w-2 h-2 rounded-full bg-outline"></div>
+<span class="font-body-md text-outline">EMG_SYNC_OFF</span>
+</div>
+</div>
+</div>
+<div class="mt-auto">
+<div class="w-full aspect-video bg-cover bg-center border-[0.5px] border-outline-variant grayscale" data-alt="A clinical technical illustration of a human brain with highlighted motor cortex pathways. The style is minimalist with thin cyan line art over a light grey background, matching a high-end medical software interface." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBwGB-mtws74PjBOpQxL_s6xUf_i_mKjdilw-5LlnWeY9_fNONps0MHPCA7rrL1eR69CZYW7vQqxCmrzhlIGPjS9rnqmju2P4HWNJDNY3ihHcGK47FFfjgVOkTUBQzaVH70pYhDgS5VhUVtbNF_VxD4H4gS30ORtBNmM-EzvnenI9Kt4gck5gN8NOX-_YqmK_NXCWtU5bNKFLzmZiku1DH4t26zEEpT5PIocppJv_V84fXRP_d-Piaq')"></div>
+<p class="font-data-label text-[10px] text-outline mt-2 leading-relaxed">
+                    NEURO_ENGINE v4.2.1-PRO<br/>
+                    READY FOR DATA ACQUISITION
+                </p>
+</div>
+</aside>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 bg-white/70 backdrop-blur-md border-t-[0.5px] border-outline-variant flex justify-around items-center w-full h-16 pb-safe px-unit">
+<a class="flex flex-col items-center justify-center text-outline pt-[3px] hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="font-data-label uppercase">LIVE_FEED</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary border-t-2 border-secondary pt-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">neurology</span>
+<span class="font-data-label uppercase">ASSESSMENT</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline pt-[3px] hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-data-label uppercase">REPORTS</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline pt-[3px] hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings_input_component</span>
+<span class="font-data-label uppercase">SYSTEM</span>
+</a>
+</nav>
+<script>
+        const canvas = document.getElementById('assessment-canvas');
+        const ctx = canvas.getContext('2d');
+        const posX = document.getElementById('pos-x');
+        const posY = document.getElementById('pos-y');
+        const devVal = document.getElementById('deviation-val');
+        const clearBtn = document.getElementById('clear-btn');
+
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function startDrawing(e) {
+            isDrawing = true;
+            [lastX, lastY] = getCoordinates(e);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const [x, y] = getCoordinates(e);
+            
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.strokeStyle = '#006875'; // Precision Cyan
+            ctx.lineWidth = 1.5;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            
+            [lastX, lastY] = [x, y];
+            
+            // HUD Updates
+            posX.innerText = Math.round(x).toString().padStart(3, '0');
+            posY.innerText = Math.round(y).toString().padStart(3, '0');
+            
+            // Simulating variance in real-time
+            const currentDev = (1.2 + Math.random() * 0.1).toFixed(2);
+            devVal.innerText = currentDev;
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function getCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+            return [x, y];
+        }
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDrawing(e); }, { passive: false });
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); }, { passive: false });
+        canvas.addEventListener('touchend', stopDrawing);
+
+        clearBtn.addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        // Atmospheric micro-interaction
+        document.addEventListener('mousemove', (e) => {
+            const opacity = 0.5 + Math.random() * 0.2;
+            document.querySelectorAll('.status-accent').forEach(el => {
+                el.style.opacity = opacity;
+            });
+        });
+    </script>
+</body></html>

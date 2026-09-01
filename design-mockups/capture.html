@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NeuraTrack — Task Capture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;1,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --canvas:#F7F4EE; --canvas-dim:#EDE8DE; --paper:#FFFFFF;
+    --ink:#1B2420; --ink-soft:#55504A;
+    --green:#2F5D50; --green-dim:#7FB3A3; --green-tint:#E7F0EC;
+    --terra:#D97B4F; --gold:#C9A227; --hair:#DAD2C2;
+    --viewport:#0F1613;
+    color-scheme: light;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--canvas); color:var(--ink); font-family:'Inter',sans-serif; }
+  h1,h2{ font-family:'Fraunces',serif; font-style:italic; font-weight:600; margin:0; }
+  .mono{ font-family:'IBM Plex Mono',monospace; letter-spacing:.04em; text-transform:uppercase; font-size:12px; color:var(--ink-soft); }
+
+  header.topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 28px; border-bottom:1px solid var(--hair); background:var(--paper);
+    position:sticky; top:0; z-index:10;
+  }
+  .wordmark{ font-family:'Fraunces'; font-style:italic; font-weight:600; font-size:20px; }
+  .wordmark span{ color:var(--green); }
+  .mode-toggle{ display:flex; border:1px solid var(--hair); border-radius:999px; overflow:hidden; }
+  .mode-toggle button{ border:none; background:var(--paper); padding:8px 18px; font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer; color:var(--ink-soft); }
+  .mode-toggle button.active{ background:var(--green); color:var(--canvas); }
+  .progress-dots{ display:flex; gap:6px; align-items:center; }
+  .progress-dots .d{ width:7px; height:7px; border-radius:50%; background:var(--hair); }
+  .progress-dots .d.active{ background:var(--terra); }
+
+  .layout{ display:grid; grid-template-columns:1.5fr 1fr; gap:20px; padding:24px 28px 100px; max-width:1300px; margin:0 auto; }
+  @media (max-width:980px){ .layout{ grid-template-columns:1fr; } }
+
+  .viewport-card{
+    background:var(--viewport); border-radius:14px; overflow:hidden; position:relative;
+    aspect-ratio:4/3; border:1px solid #223028;
+  }
+  video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.35; transform:scaleX(-1); }
+  #three-container{ position:absolute; inset:0; }
+  #overlay2d{ position:absolute; inset:0; pointer-events:none; }
+  .viewport-label{ position:absolute; top:16px; left:18px; color:#DAD2C2; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:.08em; text-transform:uppercase; z-index:5; }
+  .ring-wrap{ position:absolute; bottom:22px; left:50%; transform:translateX(-50%); z-index:5; text-align:center; }
+  .ring-wrap svg{ transform:rotate(-90deg); }
+  .ring-wrap .label{ margin-top:8px; font-family:'IBM Plex Mono'; color:#DAD2C2; font-size:12px; }
+
+  .col{ display:flex; flex-direction:column; gap:18px; }
+  .card{ background:var(--paper); border:1px solid var(--hair); border-radius:12px; padding:20px 22px; }
+  .card h3{ font-family:'Inter'; font-style:normal; font-weight:700; font-size:16px; margin-bottom:6px; }
+  .card p{ color:var(--ink-soft); font-size:14px; margin:0 0 4px; }
+  .card canvas{ margin-top:10px; }
+
+  .chip-row{ display:flex; gap:10px; margin-top:12px; }
+  .chip{ display:flex; align-items:center; gap:6px; border:1px solid var(--hair); border-radius:999px; padding:6px 12px; font-family:'IBM Plex Mono'; font-size:11px; color:var(--ink-soft); }
+  .chip .dot{ width:7px; height:7px; border-radius:50%; background:var(--hair); }
+  .chip.on .dot{ background:var(--green); }
+  .chip.on{ border-color:var(--green); color:var(--green); }
+
+  select{
+    width:100%; padding:12px 14px; border:1px solid var(--hair); border-radius:8px; font-family:'Inter'; font-size:14px;
+    background:var(--paper); color:var(--ink); margin-bottom:10px;
+  }
+
+  .bottombar{
+    position:fixed; bottom:0; left:0; right:0; background:rgba(247,244,238,.92); backdrop-filter:blur(10px);
+    border-top:1px solid var(--hair); padding:16px 28px; display:flex; justify-content:center; gap:16px; align-items:center;
+  }
+  .btn{ display:inline-flex; align-items:center; gap:8px; border-radius:4px; padding:13px 26px; font-family:'Inter'; font-weight:700; font-size:15px; cursor:pointer; border:1.5px solid transparent; min-height:44px; transition:transform 150ms; }
+  .btn:active{ transform:scale(.97); }
+  .btn-primary{ background:var(--green); color:var(--canvas); }
+  .btn-primary:disabled{ opacity:.5; cursor:not-allowed; }
+  .btn-ghost{ background:transparent; border-color:var(--ink); color:var(--ink); }
+  .status{ font-family:'IBM Plex Mono'; font-size:12px; color:var(--ink-soft); text-align:center; margin-top:10px; }
+
+  .disclaimer{ font-size:12px; color:var(--ink-soft); border-top:1px solid var(--hair); margin-top:14px; padding-top:12px; }
+
+  .metric-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .metric{ border:1px solid var(--hair); border-radius:10px; padding:12px 14px; }
+  .metric .l{ font-family:'IBM Plex Mono'; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); }
+  .metric .v{ font-family:'IBM Plex Mono'; font-size:22px; font-weight:600; color:var(--ink); margin-top:2px; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wordmark">Neura<span>Track</span></div>
+  <div class="progress-dots" id="progressDots"></div>
+  <div class="mode-toggle">
+    <button class="active" id="modePatient">Patient</button>
+    <button id="modeClinician">Clinician</button>
+  </div>
+</header>
+
+<div class="layout">
+  <div>
+    <div class="viewport-card">
+      <div class="viewport-label">Live capture — on-device only</div>
+      <video id="video" autoplay playsinline muted></video>
+      <div id="three-container"></div>
+      <canvas id="overlay2d"></canvas>
+      <div class="ring-wrap" id="ringWrap" style="display:none;">
+        <svg width="64" height="64"><circle cx="32" cy="32" r="27" stroke="#3A4A42" stroke-width="4" fill="none"/><circle id="ringProgress" cx="32" cy="32" r="27" stroke="#D97B4F" stroke-width="4" fill="none" stroke-dasharray="170" stroke-dashoffset="170"/></svg>
+        <div class="label" id="ringLabel">10.0s</div>
+      </div>
+    </div>
+    <div class="status" id="status">Click "Start Camera" below to begin.</div>
+  </div>
+
+  <div class="col">
+    <div class="card">
+      <span class="mono">Task</span>
+      <select id="taskSelect">
+        <option value="rest">Rest Tremor</option>
+        <option value="postural">Postural Tremor</option>
+        <option value="tap">Finger Tap</option>
+        <option value="pronation">Pronation-Supination</option>
+      </select>
+      <h3 id="taskTitle">Rest Tremor</h3>
+      <p id="taskGuide">Rest your hand naturally in your lap or on a table, fully relaxed, in view of the camera.</p>
+      <div class="chip-row">
+        <div class="chip" id="chipLeft"><span class="dot"></span>Left hand</div>
+        <div class="chip" id="chipRight"><span class="dot"></span>Right hand</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Live amplitude</h3>
+      <p>Fingertip jitter, updates during recording.</p>
+      <canvas id="amplitudeChart" height="120"></canvas>
+    </div>
+
+    <div class="card">
+      <h3>Session result</h3>
+      <div class="metric-grid">
+        <div class="metric"><div class="l">Frequency</div><div class="v" id="mFreq">—</div></div>
+        <div class="metric"><div class="l">Amplitude</div><div class="v" id="mAmp">—</div></div>
+        <div class="metric"><div class="l">Asymmetry</div><div class="v" id="mAsym">—</div></div>
+        <div class="metric"><div class="l">Pattern match</div><div class="v" id="mPattern" style="font-size:14px;">—</div></div>
+      </div>
+      <div class="disclaimer">⚠ Monitoring tool — not a diagnosis. Always consult a licensed clinician about neurological symptoms.</div>
+    </div>
+  </div>
+</div>
+
+<div class="bottombar">
+  <button class="btn btn-ghost" id="startCamBtn">Start Camera</button>
+  <button class="btn btn-primary" id="startRecBtn" disabled>Start Recording</button>
+</div>
+
+<script type="module">
+import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+import { analyzeTremor, analyzeTapDecrement } from "./fft.js";
+
+const TASKS = {
+  rest: { title: "Rest Tremor", guide: "Rest your hand naturally in your lap or on a table, fully relaxed, in view of the camera." },
+  postural: { title: "Postural Tremor", guide: "Extend your arm forward, holding your hand steady against gravity." },
+  tap: { title: "Finger Tap", guide: "Tap your thumb and index finger together repeatedly, as quickly and as big as you comfortably can." },
+  pronation: { title: "Pronation-Supination", guide: "Rotate your hand rapidly palm-up, palm-down, keeping your elbow steady." },
+};
+const dotsEl = document.getElementById("progressDots");
+["rest","postural","tap","pronation"].forEach((_,i)=>{ const d=document.createElement("div"); d.className="d"+(i===0?" active":""); dotsEl.appendChild(d); });
+
+const video = document.getElementById("video");
+const overlay = document.getElementById("overlay2d");
+const octx = overlay.getContext("2d");
+const startCamBtn = document.getElementById("startCamBtn");
+const startRecBtn = document.getElementById("startRecBtn");
+const taskSelect = document.getElementById("taskSelect");
+const taskTitle = document.getElementById("taskTitle");
+const taskGuide = document.getElementById("taskGuide");
+const statusEl = document.getElementById("status");
+const ringWrap = document.getElementById("ringWrap");
+const ringProgress = document.getElementById("ringProgress");
+const ringLabel = document.getElementById("ringLabel");
+const chipLeft = document.getElementById("chipLeft");
+const chipRight = document.getElementById("chipRight");
+const mFreq = document.getElementById("mFreq");
+const mAmp = document.getElementById("mAmp");
+const mAsym = document.getElementById("mAsym");
+const mPattern = document.getElementById("mPattern");
+
+taskSelect.addEventListener("change", () => {
+  const t = TASKS[taskSelect.value];
+  taskTitle.textContent = t.title;
+  taskGuide.textContent = t.guide;
+});
+
+let handLandmarker=null, running=false, recording=false, recordBuffer=[], recordStartTime=0;
+const RECORD_MS = 10000;
+let lastVideoTime = -1;
+
+const HAND_CONNECTIONS = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+
+async function initHandLandmarker(){
+  const fileset = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+  handLandmarker = await HandLandmarker.createFromOptions(fileset, {
+    baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task", delegate: "GPU" },
+    runningMode: "VIDEO", numHands: 2,
+  });
+}
+
+async function startCamera(){
+  statusEl.textContent = "Requesting camera access…";
+  const stream = await navigator.mediaDevices.getUserMedia({ video: { width:640, height:480 }, audio:false });
+  video.srcObject = stream;
+  await new Promise(res => video.onloadedmetadata = res);
+  overlay.width = video.videoWidth; overlay.height = video.videoHeight;
+  statusEl.textContent = "Loading hand-tracking model…";
+  if (!handLandmarker) await initHandLandmarker();
+  running = true;
+  startRecBtn.disabled = false;
+  statusEl.textContent = "Camera live. Choose a task, then start recording.";
+  requestAnimationFrame(renderLoop);
+}
+
+function renderLoop(){
+  if (!running) return;
+  if (video.currentTime !== lastVideoTime && handLandmarker) {
+    lastVideoTime = video.currentTime;
+    const nowMs = performance.now();
+    const result = handLandmarker.detectForVideo(video, nowMs);
+    drawOverlay(result);
+    updateHandednessChips(result);
+    updateThreeScene(result);
+    if (recording) {
+      recordBuffer.push({ t: nowMs - recordStartTime, result });
+      pushLiveAmplitude(result);
+      const remaining = RECORD_MS - (nowMs - recordStartTime);
+      const pct = Math.max(0, remaining / RECORD_MS);
+      ringProgress.setAttribute("stroke-dashoffset", (170 * pct).toFixed(1));
+      ringLabel.textContent = Math.max(0, remaining/1000).toFixed(1) + "s";
+      if (remaining <= 0) finishRecording();
+    }
+  }
+  requestAnimationFrame(renderLoop);
+}
+
+function updateHandednessChips(result){
+  let left=false, right=false;
+  (result.handednesses||[]).forEach(h => {
+    const label = h[0]?.categoryName;
+    if (label === "Left") left = true;
+    if (label === "Right") right = true;
+  });
+  chipLeft.classList.toggle("on", left);
+  chipRight.classList.toggle("on", right);
+}
+
+function drawOverlay(result){
+  octx.clearRect(0,0,overlay.width,overlay.height);
+  (result.landmarks||[]).forEach(lm => {
+    octx.strokeStyle = "rgba(127,179,163,.5)"; octx.lineWidth = 2;
+    for (const [a,b] of HAND_CONNECTIONS){
+      octx.beginPath();
+      octx.moveTo(lm[a].x*overlay.width, lm[a].y*overlay.height);
+      octx.lineTo(lm[b].x*overlay.width, lm[b].y*overlay.height);
+      octx.stroke();
+    }
+  });
+}
+
+startRecBtn.addEventListener("click", () => {
+  recordBuffer = []; recording = true; recordStartTime = performance.now();
+  startRecBtn.disabled = true; taskSelect.disabled = true;
+  ringWrap.style.display = "block";
+  statusEl.textContent = "Recording…";
+  amplitudeSeries = []; amplitudeChart.data.labels=[]; amplitudeChart.data.datasets[0].data=[]; amplitudeChart.update();
+});
+
+function finishRecording(){
+  recording = false; startRecBtn.disabled = false; taskSelect.disabled = false;
+  ringWrap.style.display = "none";
+  statusEl.textContent = "Analyzing…";
+  setTimeout(analyzeSession, 150);
+}
+
+function dist(a,b){ const dx=a.x-b.x, dy=a.y-b.y, dz=(a.z||0)-(b.z||0); return Math.sqrt(dx*dx+dy*dy+dz*dz); }
+function median(arr){ const s=[...arr].sort((a,b)=>a-b); return s[Math.floor(s.length/2)]; }
+
+function perHandSeries(handIndex){
+  const frames = recordBuffer.filter(f => f.result.landmarks && f.result.landmarks[handIndex]);
+  if (frames.length < 8) return null;
+  const totalT = frames[frames.length-1].t - frames[0].t;
+  const fs = (frames.length/totalT)*1000;
+  const handScale = median(frames.map(f=>dist(f.result.landmarks[handIndex][0], f.result.landmarks[handIndex][9]))) || 1;
+  const xSeries = frames.map(f=>f.result.landmarks[handIndex][8].x/handScale);
+  const { frequency, rmsAmplitude } = analyzeTremor(xSeries, fs, 2, 15);
+  return { frequency, rmsAmplitude };
+}
+
+function analyzeSession(){
+  if (recordBuffer.length < 8){ statusEl.textContent = "Not enough hand data — try again with better lighting."; return; }
+  const hand0 = perHandSeries(0);
+  const hand1 = perHandSeries(1);
+  const primary = hand0 || hand1;
+  if (!primary){ statusEl.textContent = "No hand detected during recording — try again."; return; }
+
+  mFreq.textContent = primary.frequency.toFixed(2) + " Hz";
+  mAmp.textContent = primary.rmsAmplitude.toFixed(4);
+
+  if (hand0 && hand1) {
+    const l = hand0.rmsAmplitude, r = hand1.rmsAmplitude;
+    const asym = Math.abs(l-r) / (((l+r)/2) || 1);
+    mAsym.textContent = (asym*100).toFixed(0) + "%";
+  } else {
+    mAsym.textContent = "1 hand";
+  }
+
+  // simple descriptive pattern label from frequency band (NOT a diagnosis)
+  let label = "Within typical range";
+  if (primary.frequency >= 4 && primary.frequency <= 6) label = "Rest-dominant, 4-6 Hz band";
+  else if (primary.frequency > 6 && primary.frequency <= 12) label = "Postural-dominant, 6-12 Hz band";
+  mPattern.textContent = label;
+
+  statusEl.textContent = "Result ready. Choose a task to run again.";
+}
+
+// live chart
+let amplitudeSeries = [];
+const amplitudeChart = new Chart(document.getElementById("amplitudeChart"), {
+  type: "line",
+  data: { labels: [], datasets: [{ data: [], borderColor: "#2F5D50", pointRadius:0, tension:.3, borderWidth:2 }] },
+  options: { animation:false, plugins:{legend:{display:false}}, scales:{ x:{display:false}, y:{ grid:{color:"#DAD2C2"}, ticks:{color:"#55504A", font:{family:"IBM Plex Mono", size:10}} } } }
+});
+function pushLiveAmplitude(result){
+  if (!result.landmarks || !result.landmarks[0]) return;
+  const lm = result.landmarks[0];
+  const j = dist(lm[8], lm[0]);
+  amplitudeSeries.push(j);
+  if (amplitudeSeries.length>150) amplitudeSeries.shift();
+  amplitudeChart.data.labels = amplitudeSeries.map((_,i)=>i);
+  amplitudeChart.data.datasets[0].data = amplitudeSeries;
+  amplitudeChart.update("none");
+}
+
+// three.js
+const threeContainer = document.getElementById("three-container");
+const scene = new THREE.Scene();
+const camera3d = new THREE.PerspectiveCamera(45, 4/3, .01, 10);
+camera3d.position.set(0,0,1.4);
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+renderer.setSize(threeContainer.clientWidth||480, threeContainer.clientHeight||360);
+threeContainer.appendChild(renderer.domElement);
+scene.add(new THREE.AmbientLight(0x8899aa, 1.4));
+const light1 = new THREE.PointLight(0x7FB3A3, 1.4); light1.position.set(1,1,2); scene.add(light1);
+
+function makeHandGroup(){
+  const joints=[]; const bones=[];
+  for (let i=0;i<21;i++){
+    const geo = new THREE.SphereGeometry(0.011,10,10);
+    const mat = new THREE.MeshStandardMaterial({ color:0x7FB3A3, emissive:0x0d1e18 });
+    const mesh = new THREE.Mesh(geo, mat); scene.add(mesh); joints.push(mesh);
+  }
+  for (const [a,b] of HAND_CONNECTIONS){
+    const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+    const mat = new THREE.LineBasicMaterial({ color:0x3A4A42 });
+    const line = new THREE.Line(geo, mat); scene.add(line); bones.push({a,b,line});
+  }
+  return { joints, bones, history: Array.from({length:21},()=>[]) };
+}
+const hands = [makeHandGroup(), makeHandGroup()];
+
+function toVec3(p){ return new THREE.Vector3((p.x-0.5)*-1.2, (0.5-p.y)*1.2, -(p.z||0)*1.2); }
+function jitterOf(h){ if(h.length<3) return 0; let s=0; for(let i=1;i<h.length;i++) s+=h[i].distanceTo(h[i-1]); return s/(h.length-1); }
+function heatColor(j){ const t=Math.min(1, j/0.01); const c1=new THREE.Color(0x7FB3A3), c2=new THREE.Color(0xD97B4F); return c1.clone().lerp(c2,t); }
+
+function updateThreeScene(result){
+  const lmList = result.landmarks || [];
+  hands.forEach((handGroup, idx) => {
+    const lm = lmList[idx];
+    const visible = !!lm;
+    handGroup.joints.forEach(j => j.visible = visible);
+    handGroup.bones.forEach(b => b.line.visible = visible);
+    if (!visible) return;
+    for (let i=0;i<21;i++){
+      const v = toVec3(lm[i]);
+      handGroup.joints[i].position.copy(v);
+      handGroup.history[i].push(v.clone());
+      if (handGroup.history[i].length>16) handGroup.history[i].shift();
+      const color = heatColor(jitterOf(handGroup.history[i]));
+      handGroup.joints[i].material.color.set(color);
+      handGroup.joints[i].material.emissive.set(color).multiplyScalar(.2);
+    }
+    handGroup.bones.forEach(b => b.line.geometry.setFromPoints([handGroup.joints[b.a].position, handGroup.joints[b.b].position]));
+  });
+}
+
+function animateIdle(){ requestAnimationFrame(animateIdle); renderer.render(scene, camera3d); }
+animateIdle();
+
+startCamBtn.addEventListener("click", async () => {
+  startCamBtn.disabled = true;
+  try { await startCamera(); } catch(err){ statusEl.textContent = "Camera error: " + err.message; startCamBtn.disabled=false; }
+});
+
+document.getElementById("modeClinician").addEventListener("click", (e)=>{
+  document.getElementById("modePatient").classList.remove("active");
+  e.target.classList.add("active");
+});
+document.getElementById("modePatient").addEventListener("click", (e)=>{
+  document.getElementById("modeClinician").classList.remove("active");
+  e.target.classList.add("active");
+});
+</script>
+</body>
+</html>

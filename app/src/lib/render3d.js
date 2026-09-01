@@ -1,0 +1,360 @@
+// render3d.js — 3D & chart rendering module (PRD §9.5).
+// Every animation here is data-driven (joint positions, jitter, a recorded
+// trajectory, a real spectrum) — never decoration, per the Design System's
+// "motion has a job" principle.
+import * as THREE from "three";
+import Chart from "chart.js/auto";
+
+const CALM_BLUE = new THREE.Color(0x3e6fa6);
+const HOT_AMBER = new THREE.Color(0xe8a23d);
+const BONE_COLOR = 0x223028;
+
+export const HAND_CONNECTIONS = [
+  [0, 1], [1, 2], [2, 3], [3, 4],
+  [0, 5], [5, 6], [6, 7], [7, 8],
+  [5, 9], [9, 10], [10, 11], [11, 12],
+  [9, 13], [13, 14], [14, 15], [15, 16],
+  [13, 17], [17, 18], [18, 19], [19, 20],
+  [0, 17],
+];
+
+function makeHandGroup(scene) {
+  const joints = [];
+  const bones = [];
+  for (let i = 0; i < 21; i++) {
+    const geo = new THREE.SphereGeometry(0.012, 12, 12);
+    const mat = new THREE.MeshStandardMaterial({ color: CALM_BLUE, emissive: 0x0a1512, roughness: 0.4 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.visible = false;
+    scene.add(mesh);
+    joints.push(mesh);
+  }
+  for (const [a, b] of HAND_CONNECTIONS) {
+    const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+    const mat = new THREE.LineBasicMaterial({ color: BONE_COLOR });
+    const line = new THREE.Line(geo, mat);
+    line.visible = false;
+    scene.add(line);
+    bones.push({ a, b, line });
+  }
+  return { joints, bones, history: Array.from({ length: 21 }, () => []) };
+}
+
+function toVec3(p) {
+  return new THREE.Vector3((p.x - 0.5) * -1.2, (0.5 - p.y) * 1.2, -(p.z || 0) * 1.2);
+}
+
+function rollingJitter(history) {
+  if (history.length < 3) return 0;
+  let sum = 0;
+  for (let i = 1; i < history.length; i++) sum += history[i].distanceTo(history[i - 1]);
+  return sum / (history.length - 1);
+}
+
+/**
+ * Builds the Three.js scene, camera, renderer, and two 21-joint hand
+ * skeletons (bilateral) with connecting bone lines.
+ * @param {HTMLElement} container
+ */
+export function createHandScene(container) {
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, (container.clientWidth || 4) / (container.clientHeight || 3), 0.01, 10);
+  camera.position.set(0, 0, 1.4);
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(container.clientWidth || 480, container.clientHeight || 360);
+  container.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0x8899aa, 1.4));
+  const light = new THREE.PointLight(0x7fb3a3, 1.2);
+  light.position.set(1, 1, 2);
+  scene.add(light);
+
+  const hands = [makeHandGroup(scene), makeHandGroup(scene)];
+
+  let raf = null;
+  function loop() {
+    raf = requestAnimationFrame(loop);
+    renderer.render(scene, camera);
+  }
+  loop();
+
+  function resize() {
+    const w = container.clientWidth || 480;
+    const h = container.clientHeight || 360;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  }
+  window.addEventListener("resize", resize);
+
+  return {
+    scene,
+    camera,
+    renderer,
+    hands,
+    dispose() {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", resize);
+      renderer.dispose();
+      if (renderer.domElement.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
+    },
+  };
+}
+
+/**
+ * Updates joint positions every frame and recolors each joint from
+ * calm-blue to hot-amber based on rolling per-joint jitter (Design System §7).
+ * @param {ReturnType<typeof createHandScene>} sceneRefs
+ * @param {{landmarks?: any[][]}} frame - a MediaPipe HandLandmarkerResult-shaped frame
+ */
+export function updateHandScene(sceneRefs, frame) {
+  const lmList = frame?.landmarks || [];
+  sceneRefs.hands.forEach((handGroup, idx) => {
+    const lm = lmList[idx];
+    const visible = !!lm;
+    handGroup.joints.forEach((j) => (j.visible = visible));
+    handGroup.bones.forEach((b) => (b.line.visible = visible));
+    if (!visible) return;
+
+    for (let i = 0; i < 21; i++) {
+      const v = toVec3(lm[i]);
+      handGroup.joints[i].position.copy(v);
+      handGroup.history[i].push(v.clone());
+      if (handGroup.history[i].length > 16) handGroup.history[i].shift();
+
+      const jitter = rollingJitter(handGroup.history[i]);
+      const t = Math.min(1, jitter / 0.01);
+      const color = CALM_BLUE.clone().lerp(HOT_AMBER, t);
+      handGroup.joints[i].material.color.copy(color);
+      handGroup.joints[i].material.emissive.copy(color).multiplyScalar(0.2);
+      // amplitude is also conveyed non-color: joint grows slightly with jitter (never color-alone)
+      const scale = 1 + t * 0.6;
+      handGroup.joints[i].scale.setScalar(scale);
+    }
+    handGroup.bones.forEach((b) =>
+      b.line.geometry.setFromPoints([handGroup.joints[b.a].position, handGroup.joints[b.b].position])
+    );
+  });
+}
+
+/**
+ * Renders the fingertip's (x,y,z) trajectory over a recording window as a
+ * glowing, slowly-rotating 3D phase-space curve — data-driven, not synthetic.
+ * @param {HTMLElement} container
+ * @param {{x:number,y:number,z:number}[]} pointsBuffer
+ */
+export function createTremorSignaturePlot(container, pointsBuffer) {
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  camera.position.set(0, 0, 4.5);
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  const size = container.clientWidth || 320;
+  renderer.setSize(size, size);
+  container.appendChild(renderer.domElement);
+
+  const reduceMotion =
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+    document.documentElement.classList.contains("reduced-motion");
+
+  const pts =
+    pointsBuffer && pointsBuffer.length > 3
+      ? pointsBuffer.map((p) => new THREE.Vector3(p.x * 8, p.y * 8, (p.z || 0) * 8))
+      : [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.1, 0.1, 0)];
+
+  const curve = new THREE.CatmullRomCurve3(pts, false);
+  const tubeGeo = new THREE.TubeGeometry(curve, Math.max(64, pts.length), 0.02, 8, false);
+  const tubeMat = new THREE.MeshStandardMaterial({ color: 0x2f5d50, emissive: 0x0d1e18, transparent: true, opacity: 0.92 });
+  const tube = new THREE.Mesh(tubeGeo, tubeMat);
+  scene.add(tube);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+  const pointLight = new THREE.PointLight(0xd97b4f, 1.4, 20);
+  pointLight.position.set(2, 2, 3);
+  scene.add(pointLight);
+
+  let raf = null;
+  function loop() {
+    raf = requestAnimationFrame(loop);
+    if (!reduceMotion) {
+      tube.rotation.y += 0.004;
+      tube.rotation.x = Math.sin(Date.now() * 0.0003) * 0.12;
+    }
+    renderer.render(scene, camera);
+  }
+  loop();
+
+  return {
+    dispose() {
+      cancelAnimationFrame(raf);
+      renderer.dispose();
+      if (renderer.domElement.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
+    },
+  };
+}
+
+/**
+ * 2D hand-skeleton overlay drawn in VIDEO PIXEL coordinates, so it aligns
+ * exactly with the mirrored <video> element it sits on (same width/height
+ * attributes, same object-fit, same scaleX(-1) transform). The previous live
+ * view projected landmarks through a 3D perspective camera whose projection
+ * did not match the video's field of view — which is why the skeleton
+ * floated off the user's actual hand. MediaPipe landmarks are normalized to
+ * the video frame, so drawing at (x*width, y*height) on a canvas that
+ * mirrors the video's exact layout is pixel-accurate by construction.
+ * Keeps the calm-blue → hot-amber per-joint jitter ramp (Design System §7),
+ * with joint radius also growing with jitter so amplitude is never conveyed
+ * by color alone.
+ */
+export function createHandOverlay2D(canvas) {
+  const ctx = canvas.getContext("2d");
+  const CALM = [62, 111, 166]; // #3E6FA6
+  const HOT = [232, 162, 61]; // #E8A23D
+  const history = [Array.from({ length: 21 }, () => []), Array.from({ length: 21 }, () => [])];
+
+  function jitterOf(h) {
+    if (h.length < 3) return 0;
+    let s = 0;
+    for (let i = 1; i < h.length; i++) {
+      const dx = h[i].x - h[i - 1].x;
+      const dy = h[i].y - h[i - 1].y;
+      s += Math.sqrt(dx * dx + dy * dy);
+    }
+    return s / (h.length - 1);
+  }
+
+  function heat(t) {
+    const r = Math.round(CALM[0] + (HOT[0] - CALM[0]) * t);
+    const g = Math.round(CALM[1] + (HOT[1] - CALM[1]) * t);
+    const b = Math.round(CALM[2] + (HOT[2] - CALM[2]) * t);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function draw(frame) {
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    const lmList = frame?.landmarks || [];
+    for (let hand = 0; hand < 2; hand++) {
+      const lm = lmList[hand];
+      if (!lm) {
+        history[hand].forEach((arr) => (arr.length = 0));
+        continue;
+      }
+      ctx.strokeStyle = "rgba(127,179,163,0.8)";
+      ctx.lineWidth = 2;
+      for (const [a, b] of HAND_CONNECTIONS) {
+        ctx.beginPath();
+        ctx.moveTo(lm[a].x * w, lm[a].y * h);
+        ctx.lineTo(lm[b].x * w, lm[b].y * h);
+        ctx.stroke();
+      }
+      for (let i = 0; i < 21; i++) {
+        const hist = history[hand][i];
+        hist.push({ x: lm[i].x, y: lm[i].y });
+        if (hist.length > 16) hist.shift();
+        const t = Math.min(1, jitterOf(hist) / 0.008);
+        ctx.beginPath();
+        ctx.arc(lm[i].x * w, lm[i].y * h, 4 + t * 4, 0, Math.PI * 2);
+        ctx.fillStyle = heat(t);
+        ctx.fill();
+      }
+    }
+  }
+
+  return {
+    draw,
+    dispose() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    },
+  };
+}
+
+const chartFont = { family: "'IBM Plex Mono', monospace", size: 10 };
+
+/** Chart.js bar chart of the post-recording frequency spectrum. */
+export function renderSpectrumChart(canvasEl, spectrum) {
+  const existing = Chart.getChart(canvasEl);
+  if (existing) existing.destroy();
+  return new Chart(canvasEl, {
+    type: "bar",
+    data: {
+      labels: spectrum.map((p) => p.freq.toFixed(1)),
+      datasets: [
+        {
+          data: spectrum.map((p) => p.mag),
+          backgroundColor: "rgba(124,200,240,0.55)",
+          borderRadius: 2,
+        },
+      ],
+    },
+    options: {
+      animation: { duration: 300 },
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { title: { display: true, text: "Hz", font: chartFont }, ticks: { font: chartFont, maxTicksLimit: 8 }, grid: { display: false } },
+        y: { ticks: { font: chartFont }, grid: { color: "rgba(124,200,240,0.14)" } },
+      },
+    },
+  });
+}
+
+/** Chart.js live line chart updated during recording. */
+export function renderAmplitudeChart(canvasEl, yLabel) {
+  const existing = Chart.getChart(canvasEl);
+  if (existing) existing.destroy();
+  return new Chart(canvasEl, {
+    type: "line",
+    data: { labels: [], datasets: [{ data: [], borderColor: "#7CC8F0", pointRadius: 0, tension: 0.3, borderWidth: 2 }] },
+    options: {
+      animation: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { display: false },
+        y: {
+          suggestedMin: 0,
+          title: yLabel ? { display: true, text: yLabel, font: chartFont, color: "#9FB6C9" } : undefined,
+          ticks: { font: chartFont, color: "#9FB6C9" },
+          grid: { color: "rgba(124,200,240,0.14)" },
+        },
+      },
+    },
+  });
+}
+
+export function pushAmplitudeSample(chart, series, value, maxLen = 150) {
+  series.push(value);
+  if (series.length > maxLen) series.shift();
+  chart.data.labels = series.map((_, i) => i);
+  chart.data.datasets[0].data = series;
+  chart.update("none");
+}
+
+/** Chart.js paired trend line for the History dashboard. */
+export function renderTrendChart(canvasEl, labels, data, color) {
+  const existing = Chart.getChart(canvasEl);
+  if (existing) existing.destroy();
+  return new Chart(canvasEl, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          data,
+          borderColor: color,
+          backgroundColor: color + "18",
+          fill: true,
+          tension: 0.35,
+          pointRadius: 3,
+          pointBackgroundColor: color,
+        },
+      ],
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { grid: { color: "rgba(124,200,240,0.14)" }, ticks: { font: chartFont } },
+        x: { grid: { display: false }, ticks: { font: chartFont } },
+      },
+    },
+  });
+}

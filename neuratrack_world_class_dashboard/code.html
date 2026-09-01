@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURATRACK PRO | Clinical Precision Dashboard</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Three.js for 3D Elements -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#9cf0ff",
+                        "on-primary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-container": "#8ebdf9",
+                        "on-tertiary-fixed-variant": "#444749",
+                        "error": "#ba1a1a",
+                        "on-surface-variant": "#42474f",
+                        "on-background": "#0b1c30",
+                        "secondary-container": "#00e3fd",
+                        "on-secondary-fixed-variant": "#004f58",
+                        "background": "#f8f9ff",
+                        "primary-fixed-dim": "#a0c9ff",
+                        "tertiary-fixed-dim": "#c4c7c9",
+                        "surface-dim": "#cbdbf5",
+                        "surface-container-low": "#eff4ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-primary-fixed-variant": "#07497d",
+                        "surface-container-high": "#dce9ff",
+                        "primary-container": "#0f4c81",
+                        "tertiary-fixed": "#e0e3e5",
+                        "outline-variant": "#c2c7d1",
+                        "secondary": "#00dce5",
+                        "on-secondary-container": "#00616d",
+                        "inverse-surface": "#213145",
+                        "surface": "#f8f9ff",
+                        "primary-fixed": "#d2e4ff",
+                        "on-tertiary-fixed": "#191c1e",
+                        "surface-bright": "#f8f9ff",
+                        "outline": "#727780",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed-dim": "#00daf3",
+                        "tertiary": "#313436",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container": "#e5eeff",
+                        "on-secondary-fixed": "#001f24",
+                        "inverse-primary": "#a0c9ff",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#474b4d",
+                        "surface-tint": "#0f4c81",
+                        "on-surface": "#0b1c30",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#001c37",
+                        "surface-variant": "#d3e4fe",
+                        "primary": "#0f4c81",
+                        "on-tertiary-container": "#b8bbbc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "margin": "32px",
+                        "container-max": "1440px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "data-display": ["JetBrains Mono"],
+                        "data-label": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "data-display": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                        "data-label": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        body {
+            background-color: #f8f9ff;
+            color: #0b1c30;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Glassmorphic Cards */
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.1) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 0.5px solid rgba(15, 76, 129, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(15, 76, 129, 0.05);
+        }
+
+        .status-chip {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.05em;
+            padding: 2px 8px;
+            border-left: 2px solid;
+        }
+
+        /* Entrance Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.25;
+            pointer-events: none;
+        }
+
+        #hero-visualization {
+            width: 100%;
+            height: 320px;
+            position: relative;
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md antialiased">
+<!-- Persistent Background Shader Layer -->
+<canvas id="bg-canvas"></canvas>
+<!-- Top Navigation -->
+<header class="bg-white/60 backdrop-blur-xl fixed top-0 w-full z-50 border-b-[0.5px] border-primary/10 h-16 flex justify-between items-center px-margin">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary text-2xl" data-icon="neurology">neurology</span>
+<span class="font-data-display text-data-display font-bold text-primary tracking-[0.2em] uppercase">NEURATRACK_PRO</span>
+</div>
+<div class="flex items-center gap-gutter">
+<div class="hidden md:flex gap-8 items-center">
+<a class="text-primary font-bold font-data-label transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-full after:h-[1px] after:bg-primary" href="#">LIVE_FEED</a>
+<a class="text-outline font-normal font-data-label hover:text-primary transition-colors" href="#">ASSESSMENT</a>
+<a class="text-outline font-normal font-data-label hover:text-primary transition-colors" href="#">REPORTS</a>
+</div>
+<button class="bg-primary text-on-primary px-6 py-2 text-data-label uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20">
+                PATIENT_MODE
+            </button>
+</div>
+</header>
+<main class="pt-24 pb-20 px-margin max-w-container-max mx-auto relative z-10">
+<!-- Hero: 3D Visualization & Core Metrics -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-gutter mb-gutter">
+<!-- Central Hero Visualization Card -->
+<div class="lg:col-span-8 glass-panel p-6 flex flex-col gap-6 fade-in-up" style="animation-delay: 0.1s">
+<div class="flex justify-between items-center border-b-[0.5px] border-primary/10 pb-4">
+<h2 class="font-headline-sm text-headline-sm uppercase tracking-tight flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" data-icon="query_stats">query_stats</span>
+                        KINEMATIC_STABILITY_V4
+                    </h2>
+<div class="flex gap-4">
+<span class="status-chip border-secondary bg-secondary/10 text-secondary">REALTIME_SCAN</span>
+<span class="status-chip border-primary/30 bg-primary/5 text-primary/60">NODE_B01</span>
+</div>
+</div>
+<!-- 3D Visualization Container -->
+<div class="bg-primary/5 rounded-xl border-[0.5px] border-primary/10 overflow-hidden" id="hero-visualization">
+<div class="w-full h-full" id="three-container"></div>
+<div class="absolute bottom-4 left-4 pointer-events-none">
+<p class="font-data-label text-[10px] text-primary/40 uppercase tracking-widest">Neural_Projection_Active</p>
+</div>
+</div>
+<!-- Summary Stats -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-gutter pt-2">
+<div class="flex flex-col">
+<span class="font-data-label text-outline uppercase text-[10px] mb-1">Dominant_Freq</span>
+<div class="flex items-baseline gap-1">
+<span class="font-data-display text-3xl font-bold text-primary">8.42</span>
+<span class="font-data-label text-primary/60">Hz</span>
+</div>
+</div>
+<div class="flex flex-col">
+<span class="font-data-label text-outline uppercase text-[10px] mb-1">Amplitude_RMS</span>
+<div class="flex items-baseline gap-1">
+<span class="font-data-display text-3xl font-bold text-primary">124</span>
+<span class="font-data-label text-primary/60">µV</span>
+</div>
+</div>
+<div class="flex flex-col">
+<span class="font-data-label text-outline uppercase text-[10px] mb-1">Signal_Noise</span>
+<div class="flex items-baseline gap-1">
+<span class="font-data-display text-3xl font-bold text-secondary">42.1</span>
+<span class="font-data-label text-secondary/60">dB</span>
+</div>
+</div>
+<div class="flex flex-col">
+<span class="font-data-label text-outline uppercase text-[10px] mb-1">Stability_Idx</span>
+<div class="flex items-baseline gap-1">
+<span class="font-data-display text-3xl font-bold text-primary">0.98</span>
+<span class="font-data-label text-primary/60">P</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Profile Sidebar -->
+<div class="lg:col-span-4 flex flex-col gap-gutter">
+<div class="glass-panel p-6 flex flex-col justify-between flex-1 fade-in-up" style="animation-delay: 0.2s">
+<div>
+<h3 class="font-data-label text-outline uppercase mb-6 tracking-widest">Patient_Profile</h3>
+<div class="flex items-center gap-6 mb-8">
+<div class="w-20 h-20 bg-primary/5 border-[0.5px] border-primary/20 overflow-hidden rounded-full p-1">
+<img alt="Patient Profile" class="object-cover w-full h-full rounded-full grayscale opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD80xmOzIkIC-AxTDaWvYeOG2235ropRtOV7Qkw3n-wFmLaFFxBG1_Yv-oSzYOM9xgo-57BE2RS17BpIDKj6o8sj-OefwWb0WcPeW99w03rSCzRq8f1efsDs8lU0cu6YLLEPOVaBQYJ_HDgcNi-yZlUbGmukvTuo5qBvjO1g0YV_UldIB6iofaExvZIvsPACDUHD3oTi0P4EQpTd2_aNH9TFsg6qZaddsNHfDuxoX4YFfrOHeafpWxZ"/>
+</div>
+<div>
+<p class="font-headline-sm text-headline-sm text-primary">SUB_ID: 884-X</p>
+<p class="font-data-label text-secondary uppercase text-[10px]">Parkinsonian_Tremor</p>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between items-center border-b-[0.5px] border-primary/5 pb-2">
+<span class="font-data-label text-outline text-[10px]">SESSION_DUR</span>
+<span class="font-data-display text-primary">02:44:12</span>
+</div>
+<div class="flex justify-between items-center border-b-[0.5px] border-primary/5 pb-2">
+<span class="font-data-label text-outline text-[10px]">BATTERY_LVL</span>
+<span class="font-data-display text-secondary">88%</span>
+</div>
+<div class="flex justify-between items-center border-b-[0.5px] border-primary/5 pb-2">
+<span class="font-data-label text-outline text-[10px]">TEMP_CORE</span>
+<span class="font-data-display text-primary">36.8°C</span>
+</div>
+</div>
+</div>
+<button class="w-full bg-primary/5 border-[0.5px] border-primary/20 text-primary py-3 font-data-label uppercase text-[10px] tracking-widest hover:bg-primary hover:text-white transition-all mt-8">
+                        EXPORT_SESSION_LOG
+                    </button>
+</div>
+</div>
+</section>
+<!-- Neural Telemetry Stream -->
+<section class="mb-gutter fade-in-up" style="animation-delay: 0.3s">
+<div class="glass-panel overflow-hidden">
+<div class="flex items-center justify-between p-5 border-b-[0.5px] border-primary/10">
+<h3 class="font-headline-sm text-headline-sm flex items-center gap-3 uppercase text-primary">
+<span class="material-symbols-outlined" data-icon="waves">waves</span>
+                        NEURAL_TELEMETRY_LOG
+                    </h3>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(0,220,229,0.8)] animate-pulse"></span>
+<span class="font-data-label text-secondary uppercase text-[10px]">Signal_Locked</span>
+</div>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left font-data-display text-data-display">
+<thead class="bg-primary/[0.02] border-b-[0.5px] border-primary/10 font-data-label text-outline uppercase text-[10px]">
+<tr>
+<th class="p-5 font-normal">TIMESTAMP</th>
+<th class="p-5 font-normal">EVENT_TYPE</th>
+<th class="p-5 font-normal">MAGNITUDE</th>
+<th class="p-5 font-normal">BANDWIDTH</th>
+<th class="p-5 font-normal text-right">STATUS</th>
+</tr>
+</thead>
+<tbody class="divide-y-[0.5px] divide-primary/5">
+<tr class="hover:bg-primary/[0.03] transition-colors">
+<td class="p-5 text-outline text-[12px]">14:22:01:04</td>
+<td class="p-5 font-bold text-primary">MOTOR_CORTEX_SPIKE</td>
+<td class="p-5">12.4 µV</td>
+<td class="p-5">440 Hz</td>
+<td class="p-5 text-right"><span class="status-chip border-secondary bg-secondary/10 text-secondary">NOMINAL</span></td>
+</tr>
+<tr class="hover:bg-primary/[0.03] transition-colors">
+<td class="p-5 text-outline text-[12px]">14:22:00:88</td>
+<td class="p-5 font-bold text-primary">ALPHA_BAND_SHIFT</td>
+<td class="p-5">08.1 µV</td>
+<td class="p-5">12 Hz</td>
+<td class="p-5 text-right"><span class="status-chip border-primary/30 bg-primary/5 text-primary/50">IDLE</span></td>
+</tr>
+<tr class="hover:bg-primary/[0.03] transition-colors bg-error/[0.02]">
+<td class="p-5 text-outline text-[12px]">14:21:58:22</td>
+<td class="p-5 font-bold text-error">SYNAPTIC_THRESHOLD_HIT</td>
+<td class="p-5">24.9 µV</td>
+<td class="p-5">892 Hz</td>
+<td class="p-5 text-right"><span class="status-chip border-error bg-error/10 text-error">WARNING</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<!-- Dynamic Hand Baseline Analysis -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter fade-in-up" style="animation-delay: 0.4s">
+<!-- Coordination Cards -->
+<div class="glass-panel p-6 flex flex-col gap-4 border-l-4 border-l-secondary">
+<div class="flex justify-between items-start">
+<span class="font-data-label text-secondary uppercase text-[10px]">Left_Coord_A1</span>
+<span class="material-symbols-outlined text-outline/40" data-icon="back_hand">back_hand</span>
+</div>
+<div class="flex items-center gap-5">
+<div class="h-20 w-3 bg-primary/5 rounded-full overflow-hidden relative">
+<div class="absolute bottom-0 w-full bg-secondary" style="height: 72%"></div>
+</div>
+<div>
+<p class="font-data-display text-2xl font-bold text-primary">72%</p>
+<p class="font-data-label text-outline uppercase text-[9px]">Coordination</p>
+</div>
+</div>
+</div>
+<div class="glass-panel p-6 flex flex-col gap-4 border-l-4 border-l-primary">
+<div class="flex justify-between items-start">
+<span class="font-data-label text-primary uppercase text-[10px]">Right_Coord_B1</span>
+<span class="material-symbols-outlined text-outline/40" data-icon="front_hand">front_hand</span>
+</div>
+<div class="flex items-center gap-5">
+<div class="h-20 w-3 bg-primary/5 rounded-full overflow-hidden relative">
+<div class="absolute bottom-0 w-full bg-primary" style="height: 89%"></div>
+</div>
+<div>
+<p class="font-data-display text-2xl font-bold text-primary">89%</p>
+<p class="font-data-label text-outline uppercase text-[9px]">Coordination</p>
+</div>
+</div>
+</div>
+<!-- Delta Stats -->
+<div class="glass-panel p-6 flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<span class="font-data-label text-outline uppercase text-[10px]">System_Delta</span>
+<span class="material-symbols-outlined text-outline/40" data-icon="analytics">analytics</span>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between items-center">
+<span class="font-data-label text-[9px]">STABILITY</span>
+<span class="font-data-display text-secondary">+2.4%</span>
+</div>
+<div class="w-full bg-primary/5 h-1 rounded-full overflow-hidden">
+<div class="bg-secondary h-full" style="width: 65%;"></div>
+</div>
+<div class="flex justify-between items-center mt-2">
+<span class="font-data-label text-[9px]">REACTION</span>
+<span class="font-data-display text-error">-1.1%</span>
+</div>
+<div class="w-full bg-primary/5 h-1 rounded-full overflow-hidden">
+<div class="bg-error h-full" style="width: 42%;"></div>
+</div>
+</div>
+</div>
+<!-- Diagnostics Action -->
+<div class="glass-panel p-6 flex flex-col gap-4 bg-primary text-on-primary border-none overflow-hidden relative group">
+<div class="absolute inset-0 bg-gradient-to-br from-primary via-primary to-primary-container opacity-90 transition-all group-hover:scale-105"></div>
+<div class="relative z-10">
+<div class="flex justify-between items-start mb-4">
+<span class="font-data-label opacity-70 uppercase text-[10px]">Diagnostics</span>
+<span class="material-symbols-outlined opacity-70" data-icon="vitals">vitals</span>
+</div>
+<p class="font-data-display text-lg font-bold mb-1">OPTIMIZED</p>
+<p class="font-body-md text-[11px] leading-tight opacity-70 mb-4">NeuroLink v4.1 operating at peak clinical efficiency.</p>
+<button class="w-full text-[9px] font-data-label border border-white/30 py-2 hover:bg-white/10 transition-colors uppercase tracking-[0.2em]">
+                        Run_Deep_Diagnostics
+                    </button>
+</div>
+</div>
+</section>
+</main>
+<!-- Mobile Navigation -->
+<nav class="md:hidden bg-white/80 backdrop-blur-xl fixed bottom-0 w-full z-50 border-t-[0.5px] border-primary/10 h-16 flex justify-around items-center">
+<button class="flex flex-col items-center justify-center text-secondary">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+<span class="font-data-label text-[9px]">FEED</span>
+</button>
+<button class="flex flex-col items-center justify-center text-outline">
+<span class="material-symbols-outlined" data-icon="neurology">neurology</span>
+<span class="font-data-label text-[9px]">BRAIN</span>
+</button>
+<button class="flex flex-col items-center justify-center text-outline">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-data-label text-[9px]">DATA</span>
+</button>
+</nav>
+<!-- Implementation Scripts -->
+<script>
+        // 1. Background Shader Implementation (ANIMATION_25)
+        const canvas = document.getElementById('bg-canvas');
+        const gl = canvas.getContext('webgl');
+        
+        function initShader() {
+            const vsSource = `
+                attribute vec4 a_position;
+                varying vec2 v_texCoord;
+                void main() {
+                    gl_Position = a_position;
+                    v_texCoord = a_position.xy * 0.5 + 0.5;
+                }
+            `;
+            const fsSource = `
+                precision highp float;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                varying vec2 v_texCoord;
+
+                void main() {
+                    vec2 uv = v_texCoord;
+                    vec2 p = (uv - 0.5) * 2.0;
+                    p.x *= u_resolution.x / u_resolution.y;
+                    
+                    float t = u_time * 0.1;
+                    
+                    for(float i=1.0; i<4.0; i++){
+                        p.x += 0.4/i * sin(i * 3.0 * p.y + t);
+                        p.y += 0.4/i * cos(i * 3.0 * p.x + t);
+                    }
+                    
+                    vec3 color1 = vec3(0.97, 0.98, 1.0); 
+                    vec3 color2 = vec3(0.06, 0.3, 0.51); 
+                    vec3 color3 = vec3(0.0, 0.86, 1.0);   
+                    
+                    float mask = length(p) * 0.5;
+                    vec3 color = mix(color1, color2, clamp(sin(mask - t) * 0.5 + 0.5, 0.0, 0.1));
+                    color = mix(color, color3, clamp(cos(mask + t) * 0.5 + 0.5, 0.0, 0.05));
+                    
+                    vec2 grid = fract(uv * 20.0);
+                    float gridLines = smoothstep(0.02, 0.0, grid.x) + smoothstep(0.02, 0.0, grid.y);
+                    color = mix(color, color2, gridLines * 0.02);
+                    
+                    gl_FragColor = vec4(color, 1.0);
+                }
+            `;
+
+            function createShader(gl, type, source) {
+                const shader = gl.createShader(type);
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+                return shader;
+            }
+
+            const program = gl.createProgram();
+            gl.attachShader(program, createShader(gl, gl.VERTEX_SHADER, vsSource));
+            gl.attachShader(program, createShader(gl, gl.FRAGMENT_SHADER, fsSource));
+            gl.linkProgram(program);
+            gl.useProgram(program);
+
+            const positionBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
+
+            const positionLocation = gl.getAttribLocation(program, "a_position");
+            gl.enableVertexAttribArray(positionLocation);
+            gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+            const timeLoc = gl.getUniformLocation(program, "u_time");
+            const resLoc = gl.getUniformLocation(program, "u_resolution");
+
+            function render(time) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
+                gl.uniform1f(timeLoc, time * 0.001);
+                gl.uniform2f(resLoc, canvas.width, canvas.height);
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+                requestAnimationFrame(render);
+            }
+            requestAnimationFrame(render);
+        }
+        initShader();
+
+        // 2. Hero 3D Visualization Implementation (ANIMATION_26)
+        const container = document.getElementById('three-container');
+        (function() {
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            const group = new THREE.Group();
+            scene.add(group);
+
+            const points = [];
+            const turns = 6;
+            const growth = 0.12;
+            for (let i = 0; i < 800; i++) {
+                const angle = 0.08 * i;
+                const r = growth * angle;
+                points.push(new THREE.Vector3(r * Math.cos(angle), r * Math.sin(angle), Math.sin(angle * 0.4) * 0.1));
+            }
+
+            const curve = new THREE.CatmullRomCurve3(points);
+            const geometry = new THREE.TubeGeometry(curve, 200, 0.02, 8, false);
+            const material = new THREE.MeshPhongMaterial({ 
+                color: 0x00dce5, 
+                emissive: 0x004444,
+                transparent: true,
+                opacity: 0.9,
+                shininess: 100
+            });
+            const spiral = new THREE.Mesh(geometry, material);
+            group.add(spiral);
+
+            const particlesGeom = new THREE.BufferGeometry();
+            const particlesCount = 300;
+            const posArray = new Float32Array(particlesCount * 3);
+            for(let i=0; i<particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 6;
+            }
+            particlesGeom.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const particlesMat = new THREE.PointsMaterial({ size: 0.015, color: 0x0f4c81, transparent: true, opacity: 0.4 });
+            const particles = new THREE.Points(particlesGeom, particlesMat);
+            scene.add(particles);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const pointLight = new THREE.PointLight(0x00dce5, 2, 10);
+            pointLight.position.set(2, 2, 2);
+            scene.add(pointLight);
+
+            camera.position.z = 4;
+
+            function animate() {
+                requestAnimationFrame(animate);
+                group.rotation.y += 0.003;
+                group.rotation.x = Math.sin(Date.now() * 0.0005) * 0.15;
+                particles.rotation.y -= 0.001;
+                renderer.render(scene, camera);
+            }
+
+            window.addEventListener('resize', () => {
+                const w = container.clientWidth;
+                const h = container.clientHeight;
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+                renderer.setSize(w, h);
+            });
+
+            animate();
+        })();
+
+        // Micro-interactions
+        document.addEventListener('DOMContentLoaded', () => {
+            const displayValues = document.querySelectorAll('.font-data-display');
+            setInterval(() => {
+                const target = displayValues[Math.floor(Math.random() * displayValues.length)];
+                if (target && !isNaN(parseFloat(target.innerText))) {
+                    const originalValue = parseFloat(target.innerText);
+                    const variance = (Math.random() - 0.5) * 0.05;
+                    const newValue = (originalValue + variance).toFixed(2);
+                    target.style.opacity = '0.7';
+                    setTimeout(() => {
+                        target.innerText = newValue;
+                        target.style.opacity = '1';
+                    }, 50);
+                }
+            }, 4000);
+        });
+    </script>
+</body></html>

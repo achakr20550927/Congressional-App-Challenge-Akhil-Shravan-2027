@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURO_COMMAND | Bilateral Assessment</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .rigid-grid {
+            background-size: 24px 24px;
+            background-image: linear-gradient(to right, rgba(226, 232, 240, 0.5) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(226, 232, 240, 0.5) 1px, transparent 1px);
+        }
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #00e3fd, transparent);
+            position: absolute;
+            animation: scan 4s linear infinite;
+        }
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#9cf0ff",
+                        "on-primary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-container": "#8ebdf9",
+                        "on-tertiary-fixed-variant": "#444749",
+                        "error": "#ba1a1a",
+                        "on-surface-variant": "#42474f",
+                        "on-background": "#0b1c30",
+                        "secondary-container": "#00e3fd",
+                        "on-secondary-fixed-variant": "#004f58",
+                        "background": "#f8f9ff",
+                        "primary-fixed-dim": "#a0c9ff",
+                        "tertiary-fixed-dim": "#c4c7c9",
+                        "surface-dim": "#cbdbf5",
+                        "surface-container-low": "#eff4ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-primary-fixed-variant": "#07497d",
+                        "surface-container-high": "#dce9ff",
+                        "primary-container": "#0f4c81",
+                        "tertiary-fixed": "#e0e3e5",
+                        "outline-variant": "#c2c7d1",
+                        "secondary": "#006875",
+                        "on-secondary-container": "#00616d",
+                        "inverse-surface": "#213145",
+                        "surface": "#f8f9ff",
+                        "primary-fixed": "#d2e4ff",
+                        "on-tertiary-fixed": "#191c1e",
+                        "surface-bright": "#f8f9ff",
+                        "outline": "#727780",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed-dim": "#00daf3",
+                        "tertiary": "#313436",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container": "#e5eeff",
+                        "on-secondary-fixed": "#001f24",
+                        "inverse-primary": "#a0c9ff",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#474b4d",
+                        "surface-tint": "#2d6197",
+                        "on-surface": "#0b1c30",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#001c37",
+                        "surface-variant": "#d3e4fe",
+                        "primary": "#00355f",
+                        "on-tertiary-container": "#b8bbbc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "margin": "32px",
+                        "container-max": "1440px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "data-display": ["JetBrains Mono"],
+                        "data-label": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "data-display": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                        "data-label": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen pb-20 pt-16 rigid-grid">
+<!-- TopAppBar -->
+<header class="bg-white/70 backdrop-blur-md text-primary font-headline-sm text-headline-sm font-bold uppercase tracking-wider fixed top-0 w-full z-50 border-b-[0.5px] border-outline-variant flex justify-between items-center px-margin h-16">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined">clinical_notes</span>
+<h1 class="font-data-display text-data-display font-bold text-primary">NEURO_COMMAND</h1>
+</div>
+<div class="flex items-center gap-margin">
+<nav class="hidden md:flex gap-6">
+<a class="text-outline font-normal font-data-label text-data-label hover:bg-surface-container-low transition-colors px-2 py-1" href="#">LIVE_FEED</a>
+<a class="text-primary font-bold font-data-label text-data-label px-2 py-1" href="#">ASSESSMENT</a>
+<a class="text-outline font-normal font-data-label text-data-label hover:bg-surface-container-low transition-colors px-2 py-1" href="#">REPORTS</a>
+</nav>
+<button class="bg-primary text-on-primary px-4 py-2 text-data-label font-data-label uppercase tracking-widest active:opacity-80 transition-opacity">
+                PATIENT_MODE
+            </button>
+</div>
+</header>
+<main class="max-w-container-max mx-auto px-margin mt-8">
+<!-- Header & Control Bar -->
+<div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<div class="w-2 h-2 bg-secondary-container"></div>
+<span class="font-data-label text-data-label text-secondary uppercase">Session ID: NC-992-DELTA</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-primary">BILATERAL_ASSESSMENT_PROTOCOL</h2>
+</div>
+<div class="flex gap-2">
+<div class="glass-panel border-[0.5px] border-outline-variant px-4 py-2 flex items-center gap-4">
+<span class="font-data-label text-data-label text-outline uppercase">PROTOCOL: HEMISPHERIC_SYNC</span>
+<span class="font-data-label text-data-label text-secondary uppercase font-bold">STATUS: ACTIVE</span>
+</div>
+</div>
+</div>
+<!-- Main Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- LEFT HEMISPHERE PANEL -->
+<section class="md:col-span-4 flex flex-col gap-gutter">
+<div class="glass-panel border-[0.5px] border-outline-variant relative overflow-hidden group">
+<div class="h-1 bg-primary w-1/3"></div>
+<div class="p-6">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-data-label text-data-label text-primary font-bold">L_HEMISPHERE.LOG</h3>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">left_panel_close</span>
+</div>
+<!-- Visualization Placeholder -->
+<div class="relative h-64 bg-surface-container-low border-[0.5px] border-outline-variant mb-6 overflow-hidden">
+<div class="scanline"></div>
+<div class="w-full h-full bg-cover bg-center mix-blend-multiply opacity-80" data-alt="A high-precision clinical brain scan visualization showing the left hemisphere mapped with blue and cyan frequency nodes. The background is a crisp white medical interface with technical data overlays and subtle grid lines, conveying a sense of sterile laboratory accuracy and advanced neurological research." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDV60afvJfjtRYM3R_sVnlQUdcypADqJJhfWxnjmF27BNUnjhdTA13e0IZm_xvLS7PQ1R_WkCKGXEtjeP6q_DIjiWuk3lzBThyg3zxkF5iP27psF4Ms4sORd-qNRRxSWHLXo8RfRoKXnzG0WmXz5Q7sxA4WdLqCIog8785kVidrCKsnqUDGLAha7yJnSOZPVNHYv5gxm3iHc1X0a55PJGy5EceQKV3oa5-_tg6_G1KOmVkgpAsDGXJj')"></div>
+</div>
+<!-- Data Clusters -->
+<div class="space-y-4">
+<div class="flex justify-between items-center border-b-[0.5px] border-outline-variant pb-2">
+<span class="font-data-label text-data-label text-outline">ALPHA_BAND</span>
+<span class="font-data-display text-data-display text-primary">10.2 Hz</span>
+</div>
+<div class="flex justify-between items-center border-b-[0.5px] border-outline-variant pb-2">
+<span class="font-data-label text-data-label text-outline">BETA_INTENSITY</span>
+<span class="font-data-display text-data-display text-primary">18.4 µV</span>
+</div>
+<div class="flex justify-between items-center border-b-[0.5px] border-outline-variant pb-2">
+<span class="font-data-label text-data-label text-outline">COHERENCE_L</span>
+<span class="font-data-display text-data-display text-secondary">0.92</span>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel border-[0.5px] border-outline-variant p-6">
+<h4 class="font-data-label text-data-label text-outline mb-4">DISTRIBUTION_MAP</h4>
+<div class="flex items-end gap-1 h-20">
+<!-- Tiny Data Bars -->
+<div class="bg-primary/20 w-full h-[60%]"></div>
+<div class="bg-primary/30 w-full h-[40%]"></div>
+<div class="bg-primary/40 w-full h-[80%]"></div>
+<div class="bg-primary/50 w-full h-[95%]"></div>
+<div class="bg-secondary-container w-full h-[70%]"></div>
+<div class="bg-primary/40 w-full h-[55%]"></div>
+<div class="bg-primary/30 w-full h-[45%]"></div>
+<div class="bg-primary/20 w-full h-[30%]"></div>
+</div>
+</div>
+</section>
+<!-- CENTER: ASYMMETRY INDEX -->
+<section class="md:col-span-4 flex flex-col gap-gutter">
+<div class="glass-panel border-[0.5px] border-secondary p-6 flex flex-col items-center justify-center text-center relative overflow-hidden h-full">
+<div class="absolute top-0 left-0 w-full h-1 bg-secondary-container"></div>
+<span class="font-data-label text-data-label text-outline mb-8 tracking-widest">ASYMMETRY_INDEX_CALC</span>
+<div class="relative w-48 h-48 mb-8">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-highest" cx="96" cy="96" fill="transparent" r="80" stroke="currentColor" stroke-width="2"></circle>
+<circle class="text-secondary" cx="96" cy="96" fill="transparent" r="80" stroke="currentColor" stroke-dasharray="502.4" stroke-dashoffset="125.6" stroke-width="4"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="font-data-display text-4xl font-bold text-primary">0.24</span>
+<span class="font-data-label text-data-label text-secondary">DELTA_Δ</span>
+</div>
+</div>
+<div class="w-full space-y-4 text-left">
+<div class="bg-surface-container-low p-4 border-l-2 border-secondary">
+<p class="font-data-label text-data-label text-outline mb-1">OBSERVATION_01</p>
+<p class="font-body-md text-primary font-semibold">Mild left-side dominance in frontal cortex (F3/F4).</p>
+</div>
+<div class="bg-surface-container-low p-4 border-l-2 border-outline">
+<p class="font-data-label text-data-label text-outline mb-1">OBSERVATION_02</p>
+<p class="font-body-md text-primary">Occipital synchronization remains within nominal parameters.</p>
+</div>
+</div>
+<button class="mt-auto w-full py-3 border-[0.5px] border-primary text-primary font-data-label text-data-label uppercase hover:bg-primary hover:text-white transition-all">
+                        GENERATE_FULL_REPORT
+                    </button>
+</div>
+</section>
+<!-- RIGHT HEMISPHERE PANEL -->
+<section class="md:col-span-4 flex flex-col gap-gutter">
+<div class="glass-panel border-[0.5px] border-outline-variant relative overflow-hidden group">
+<div class="h-1 bg-secondary absolute top-0 right-0 w-1/3"></div>
+<div class="p-6">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-data-label text-data-label text-primary font-bold">R_HEMISPHERE.LOG</h3>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">right_panel_close</span>
+</div>
+<!-- Visualization Placeholder -->
+<div class="relative h-64 bg-surface-container-low border-[0.5px] border-outline-variant mb-6 overflow-hidden">
+<div class="scanline"></div>
+<div class="w-full h-full bg-cover bg-center mix-blend-multiply opacity-80" data-alt="A highly detailed neurological imaging result of the right brain hemisphere. The aesthetic is ultra-clean with medical accuracy, featuring translucent layers, precision mapping markers in blue and light grey, and subtle cyan energy pathways. The image is set against a pure white background with technical annotations, representing a high-end medical command center interface." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBh0SwEwjEMqVE3h5DjJj1Jw1UXC60iGyf4zJxOLEVGEwrsk00-jRM6K986ahuCy4iF-nYIAbkFJQ6BX74C0nRs-8JYHY7kYRwjF49eZd_ogvuMVbfhaizYCQ4QI_I0qN76vNQJjSoUbrVkh8Dp0Oc3zbqKRnXqBgwn0EPU3uRQVgdJmR1N-HvfxPpJcXJs3rClQxTlfYn15KCXlluxY7SYsZ3RIjMCJk3obQjyul-CRQuUzn7cX2Ob')"></div>
+</div>
+<!-- Data Clusters -->
+<div class="space-y-4">
+<div class="flex justify-between items-center border-b-[0.5px] border-outline-variant pb-2">
+<span class="font-data-label text-data-label text-outline">ALPHA_BAND</span>
+<span class="font-data-display text-data-display text-primary">9.8 Hz</span>
+</div>
+<div class="flex justify-between items-center border-b-[0.5px] border-outline-variant pb-2">
+<span class="font-data-label text-data-label text-outline">BETA_INTENSITY</span>
+<span class="font-data-display text-data-display text-primary">16.2 µV</span>
+</div>
+<div class="flex justify-between items-center border-b-[0.5px] border-outline-variant pb-2">
+<span class="font-data-label text-data-label text-outline">COHERENCE_R</span>
+<span class="font-data-display text-data-display text-secondary">0.88</span>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel border-[0.5px] border-outline-variant p-6">
+<h4 class="font-data-label text-data-label text-outline mb-4">FREQUENCY_BURSTS</h4>
+<div class="space-y-3">
+<div class="w-full h-2 bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-secondary-container w-[75%]"></div>
+</div>
+<div class="w-full h-2 bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-primary w-[45%]"></div>
+</div>
+<div class="w-full h-2 bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-secondary-container w-[90%]"></div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- System Alerts / Log -->
+<div class="mt-gutter glass-panel border-[0.5px] border-outline-variant p-4">
+<div class="flex items-center gap-4">
+<span class="bg-secondary-container text-on-secondary px-2 py-0.5 text-[10px] font-data-label">SYSTEM_OK</span>
+<marquee class="font-data-label text-data-label text-outline flex-1">
+                    INITIALIZING REAL-TIME CALIBRATION... [OK] | BUFFERING NEURAL PACKETS... [OK] | SYNCING WITH CLOUD DATABASE: PATIENT_ID_4402 | THRESHOLD ALERT: MINIMAL VARIANCE DETECTED IN THETA BAND...
+                </marquee>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<footer class="bg-white/70 backdrop-blur-md text-primary font-data-label text-data-label uppercase fixed bottom-0 w-full z-50 border-t-[0.5px] border-outline-variant flex justify-around items-center h-16 pb-safe px-unit">
+<a class="flex flex-col items-center justify-center text-outline pt-[3px] hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span>LIVE_FEED</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary border-t-2 border-secondary pt-1 active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">neurology</span>
+<span>ASSESSMENT</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline pt-[3px] hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span>REPORTS</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline pt-[3px] hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings_input_component</span>
+<span>SYSTEM</span>
+</a>
+</footer>
+<script>
+        // Micro-interaction for hover effects on panels
+        document.querySelectorAll('.glass-panel').forEach(panel => {
+            panel.addEventListener('mouseenter', () => {
+                panel.classList.add('shadow-lg');
+                panel.style.borderColor = '#006875'; // clinical blue
+            });
+            panel.addEventListener('mouseleave', () => {
+                panel.classList.remove('shadow-lg');
+                panel.style.borderColor = '#c2c7d1'; // reset to outline-variant
+            });
+        });
+
+        // Simulating data updates
+        setInterval(() => {
+            const displays = document.querySelectorAll('.font-data-display');
+            displays.forEach(d => {
+                if(d.innerText.includes('Hz')) {
+                    const current = parseFloat(d.innerText);
+                    const variance = (Math.random() - 0.5) * 0.2;
+                    d.innerText = (current + variance).toFixed(1) + ' Hz';
+                }
+            });
+        }, 3000);
+    </script>
+</body></html>

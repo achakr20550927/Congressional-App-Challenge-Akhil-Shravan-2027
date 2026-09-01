@@ -1,0 +1,20 @@
+# Installed packages and generated application output
+app/node_modules/
+app/dist/
+
+# Python caches
+**/__pycache__/
+*.py[cod]
+
+# Raw PADS dataset (1.4 GB). The training pipeline, licensing files, and
+# dataset checksum are retained; download the source data before retraining.
+training/pads/pads-parkinsons-disease-smartwatch-dataset-1.0.0/movement/
+training/pads/pads-parkinsons-disease-smartwatch-dataset-1.0.0/patients/
+training/pads/pads-parkinsons-disease-smartwatch-dataset-1.0.0/questionnaires/
+training/pads/pads-parkinsons-disease-smartwatch-dataset-1.0.0/preprocessed/
+training/pads/pads-parkinsons-disease-smartwatch-dataset-1.0.0/scripts/*.jpg
+
+# Local editor and operating-system files
+.DS_Store
+.vscode/
+.claude/

@@ -1,0 +1,6 @@
+# Raw datasets (large / redistribution-restricted) — do not commit.
+pads/
+*.csv
+clean_labeled.csv
+training_data.csv
+__pycache__/

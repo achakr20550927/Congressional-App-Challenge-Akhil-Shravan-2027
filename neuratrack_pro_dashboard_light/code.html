@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURO_COMMAND | Pro Dashboard</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#9cf0ff",
+                        "on-primary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-container": "#8ebdf9",
+                        "on-tertiary-fixed-variant": "#444749",
+                        "error": "#ba1a1a",
+                        "on-surface-variant": "#42474f",
+                        "on-background": "#0b1c30",
+                        "secondary-container": "#00e3fd",
+                        "on-secondary-fixed-variant": "#004f58",
+                        "background": "#f8f9ff",
+                        "primary-fixed-dim": "#a0c9ff",
+                        "tertiary-fixed-dim": "#c4c7c9",
+                        "surface-dim": "#cbdbf5",
+                        "surface-container-low": "#eff4ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-primary-fixed-variant": "#07497d",
+                        "surface-container-high": "#dce9ff",
+                        "primary-container": "#0f4c81",
+                        "tertiary-fixed": "#e0e3e5",
+                        "outline-variant": "#c2c7d1",
+                        "secondary": "#006875",
+                        "on-secondary-container": "#00616d",
+                        "inverse-surface": "#213145",
+                        "surface": "#f8f9ff",
+                        "primary-fixed": "#d2e4ff",
+                        "on-tertiary-fixed": "#191c1e",
+                        "surface-bright": "#f8f9ff",
+                        "outline": "#727780",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed-dim": "#00daf3",
+                        "tertiary": "#313436",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container": "#e5eeff",
+                        "on-secondary-fixed": "#001f24",
+                        "inverse-primary": "#a0c9ff",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#474b4d",
+                        "surface-tint": "#2d6197",
+                        "on-surface": "#0b1c30",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#001c37",
+                        "surface-variant": "#d3e4fe",
+                        "primary": "#00355f",
+                        "on-tertiary-container": "#b8bbbc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "margin": "32px",
+                        "container-max": "1440px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "data-display": ["JetBrains Mono"],
+                        "data-label": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "data-display": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                        "data-label": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #f8f9ff;
+            color: #0b1c30;
+            overflow-x: hidden;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 0.5px solid #E2E8F0;
+        }
+        .status-chip {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.05em;
+            padding: 2px 8px;
+            border-left: 2px solid;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .grid-bg {
+            background-image: radial-gradient(#d3e4fe 0.5px, transparent 0.5px);
+            background-size: 24px 24px;
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md antialiased grid-bg min-h-screen">
+<!-- Top Navigation Shell -->
+<header class="bg-white/70 backdrop-blur-md fixed top-0 w-full z-50 border-b-[0.5px] border-outline-variant h-16 flex justify-between items-center px-margin">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary" data-icon="clinical_notes">clinical_notes</span>
+<span class="font-data-display text-data-display font-bold text-primary tracking-wider uppercase">NEURO_COMMAND</span>
+</div>
+<div class="flex items-center gap-gutter">
+<div class="hidden md:flex gap-8 items-center">
+<a class="text-primary font-bold font-data-label transition-colors" href="#">LIVE_FEED</a>
+<a class="text-outline font-normal font-data-label hover:text-primary transition-colors" href="#">ASSESSMENT</a>
+<a class="text-outline font-normal font-data-label hover:text-primary transition-colors" href="#">REPORTS</a>
+<a class="text-outline font-normal font-data-label hover:text-primary transition-colors" href="#">SYSTEM</a>
+</div>
+<button class="bg-primary text-on-primary px-4 py-2 text-data-label uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all">
+                PATIENT_MODE
+            </button>
+</div>
+</header>
+<main class="pt-24 pb-20 px-margin max-w-container-max mx-auto">
+<!-- Hero: Stability Metrics -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-gutter mb-gutter">
+<div class="lg:col-span-2 glass-panel p-6 flex flex-col gap-6">
+<div class="flex justify-between items-center border-b-[0.5px] border-outline-variant pb-4">
+<h2 class="font-headline-sm text-headline-sm uppercase tracking-tight flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" data-icon="monitoring">monitoring</span>
+                        STABILITY_METRICS_V2.4
+                    </h2>
+<div class="flex gap-4">
+<span class="status-chip border-secondary bg-secondary/10 text-secondary">ACTIVE_SCAN</span>
+<span class="status-chip border-outline bg-surface-container-low text-outline">REF_B01</span>
+</div>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-gutter">
+<div class="flex flex-col gap-1">
+<span class="font-data-label text-outline uppercase">Dominant_Freq</span>
+<div class="flex items-baseline gap-1">
+<span class="font-data-display text-4xl font-bold text-primary">8.42</span>
+<span class="font-data-label text-primary">Hz</span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-data-label text-outline uppercase">Amplitude_RMS</span>
+<div class="flex items-baseline gap-1">
+<span class="font-data-display text-4xl font-bold text-primary">124</span>
+<span class="font-data-label text-primary">µV</span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-data-label text-outline uppercase">Signal_Noise</span>
+<div class="flex items-baseline gap-1">
+<span class="font-data-display text-4xl font-bold text-secondary">42.1</span>
+<span class="font-data-label text-secondary">dB</span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-data-label text-outline uppercase">Stability_Idx</span>
+<div class="flex items-baseline gap-1">
+<span class="font-data-display text-4xl font-bold text-primary">0.98</span>
+<span class="font-data-label text-primary">P</span>
+</div>
+</div>
+</div>
+<div class="h-48 relative overflow-hidden bg-surface-container-low border-[0.5px] border-outline-variant">
+<!-- High density telemetry visual -->
+
+<div class="absolute inset-0 flex flex-col justify-between p-2 pointer-events-none">
+<div class="flex justify-between font-data-label text-[9px] text-outline opacity-50">
+<span>120Hz</span>
+<span>T-0ms</span>
+</div>
+<div class="flex justify-between font-data-label text-[9px] text-outline opacity-50">
+<span>0Hz</span>
+<span>T-1200ms</span>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel p-6 flex flex-col justify-between">
+<div>
+<h3 class="font-data-label text-outline uppercase mb-4">Patient_Profile</h3>
+<div class="flex items-center gap-4 mb-6">
+<div class="w-16 h-16 bg-surface-container-highest border-[0.5px] border-outline overflow-hidden rounded-none relative">
+<img class="object-cover w-full h-full grayscale opacity-80" data-alt="A clinical medical portrait of a patient profile silhouette, minimalist digital art, neutral lighting, professional medical software aesthetic, high-key white background, blue accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD80xmOzIkIC-AxTDaWvYeOG2235ropRtOV7Qkw3n-wFmLaFFxBG1_Yv-oSzYOM9xgo-57BE2RS17BpIDKj6o8sj-OefwWb0WcPeW99w03rSCzRq8f1efsDs8lU0cu6YLLEPOVaBQYJ_HDgcNi-yZlUbGmukvTuo5qBvjO1g0YV_UldIB6iofaExvZIvsPACDUHD3oTi0P4EQpTd2_aNH9TFsg6qZaddsNHfDuxoX4YFfrOHeafpWxZ"/>
+</div>
+<div>
+<p class="font-headline-sm text-headline-sm">SUB_ID: 884-X</p>
+<p class="font-data-label text-secondary uppercase">Condition: Parkinsonian_Tremor</p>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between items-center border-b-[0.5px] border-outline-variant pb-2">
+<span class="font-data-label text-outline">SESSION_DUR</span>
+<span class="font-data-display text-primary">02:44:12</span>
+</div>
+<div class="flex justify-between items-center border-b-[0.5px] border-outline-variant pb-2">
+<span class="font-data-label text-outline">BATTERY_LVL</span>
+<span class="font-data-display text-secondary">88%</span>
+</div>
+<div class="flex justify-between items-center border-b-[0.5px] border-outline-variant pb-2">
+<span class="font-data-label text-outline">TEMP_CORE</span>
+<span class="font-data-display text-primary">36.8°C</span>
+</div>
+</div>
+</div>
+<button class="w-full border-[0.5px] border-primary text-primary py-3 font-data-label uppercase hover:bg-primary/5 transition-colors mt-6">
+                    EXPORT_SESSION_LOG
+                </button>
+</div>
+</section>
+<!-- Middle: Neural Telemetry Log -->
+<section class="mb-gutter">
+<div class="glass-panel">
+<div class="flex items-center justify-between p-4 border-b-[0.5px] border-outline-variant">
+<h3 class="font-headline-sm text-headline-sm flex items-center gap-2 uppercase">
+<span class="material-symbols-outlined text-primary" data-icon="neurology">neurology</span>
+                        NEURAL_TELEMETRY_STREAM
+                    </h3>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary-container animate-pulse"></span>
+<span class="font-data-label text-secondary uppercase">Signal_Locked</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-outline" data-icon="signal_cellular_alt">signal_cellular_alt</span>
+<span class="font-data-label text-primary">98% QUALITY</span>
+</div>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left font-data-display text-data-display">
+<thead class="bg-surface-container-low border-b-[0.5px] border-outline-variant font-data-label text-outline uppercase">
+<tr>
+<th class="p-4 font-normal">TIMESTAMP</th>
+<th class="p-4 font-normal">EVENT_TYPE</th>
+<th class="p-4 font-normal">MAGNITUDE</th>
+<th class="p-4 font-normal">BANDWIDTH</th>
+<th class="p-4 font-normal">LATENCY</th>
+<th class="p-4 font-normal text-right">STATUS</th>
+</tr>
+</thead>
+<tbody class="divide-y-[0.5px] divide-outline-variant">
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="p-4 text-outline">14:22:01:04</td>
+<td class="p-4 font-bold text-primary">MOTOR_CORTEX_SPIKE</td>
+<td class="p-4">12.4 µV</td>
+<td class="p-4">440 Hz</td>
+<td class="p-4">0.02 ms</td>
+<td class="p-4 text-right"><span class="status-chip border-secondary bg-secondary/10 text-secondary">NOMINAL</span></td>
+</tr>
+<tr class="bg-surface-container-low/30 hover:bg-surface-container-low transition-colors">
+<td class="p-4 text-outline">14:22:00:88</td>
+<td class="p-4 font-bold text-primary">ALPHA_BAND_SHIFT</td>
+<td class="p-4">08.1 µV</td>
+<td class="p-4">12 Hz</td>
+<td class="p-4">0.05 ms</td>
+<td class="p-4 text-right"><span class="status-chip border-outline bg-surface-container-low text-outline">IDLE</span></td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="p-4 text-outline">14:21:58:22</td>
+<td class="p-4 font-bold text-error">SYNAPTIC_THRESHOLD_HIT</td>
+<td class="p-4">24.9 µV</td>
+<td class="p-4">892 Hz</td>
+<td class="p-4">0.12 ms</td>
+<td class="p-4 text-right"><span class="status-chip border-error bg-error/10 text-error">WARNING</span></td>
+</tr>
+<tr class="bg-surface-container-low/30 hover:bg-surface-container-low transition-colors">
+<td class="p-4 text-outline">14:21:55:04</td>
+<td class="p-4 font-bold text-primary">THETA_RESONANCE</td>
+<td class="p-4">14.2 µV</td>
+<td class="p-4">04 Hz</td>
+<td class="p-4">0.01 ms</td>
+<td class="p-4 text-right"><span class="status-chip border-secondary bg-secondary/10 text-secondary">NOMINAL</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 flex justify-center border-t-[0.5px] border-outline-variant">
+<button class="font-data-label text-outline uppercase flex items-center gap-2 hover:text-primary transition-colors">
+                        VIEW_HISTORICAL_TELEMETRY
+                        <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Bottom: Hand Baseline Widgets -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<!-- Hand Widget Left -->
+<div class="glass-panel p-6 flex flex-col gap-4 border-l-4 border-l-secondary">
+<div class="flex justify-between items-start">
+<span class="font-data-label text-secondary uppercase">Left_Hand_A1</span>
+<span class="material-symbols-outlined text-outline" data-icon="front_hand">front_hand</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="h-24 w-12 bg-surface-container-low border-[0.5px] border-outline-variant relative">
+<div class="absolute bottom-0 w-full bg-secondary h-[72%]"></div>
+</div>
+<div>
+<p class="font-data-display text-2xl font-bold text-primary">72%</p>
+<p class="font-data-label text-outline uppercase">Coordination</p>
+</div>
+</div>
+</div>
+<!-- Hand Widget Right -->
+<div class="glass-panel p-6 flex flex-col gap-4 border-l-4 border-l-primary">
+<div class="flex justify-between items-start">
+<span class="font-data-label text-primary uppercase">Right_Hand_B1</span>
+<span class="material-symbols-outlined text-outline" data-icon="front_hand">front_hand</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="h-24 w-12 bg-surface-container-low border-[0.5px] border-outline-variant relative">
+<div class="absolute bottom-0 w-full bg-primary h-[89%]"></div>
+</div>
+<div>
+<p class="font-data-display text-2xl font-bold text-primary">89%</p>
+<p class="font-data-label text-outline uppercase">Coordination</p>
+</div>
+</div>
+</div>
+<!-- Baseline Delta -->
+<div class="glass-panel p-6 flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<span class="font-data-label text-outline uppercase">Baseline_Delta</span>
+<span class="material-symbols-outlined text-outline" data-icon="analytics">analytics</span>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<span class="font-data-label">STABILITY</span>
+<span class="font-data-display text-secondary">+2.4%</span>
+</div>
+<div class="w-full bg-surface-container-low h-1.5 overflow-hidden">
+<div class="bg-secondary h-full" style="width: 65%;"></div>
+</div>
+<div class="flex justify-between items-center mt-2">
+<span class="font-data-label">REACTION</span>
+<span class="font-data-display text-error">-1.1%</span>
+</div>
+<div class="w-full bg-surface-container-low h-1.5 overflow-hidden">
+<div class="bg-error h-full" style="width: 42%;"></div>
+</div>
+</div>
+</div>
+<!-- System Info -->
+<div class="glass-panel p-6 flex flex-col gap-4 bg-primary text-on-primary border-none">
+<div class="flex justify-between items-start">
+<span class="font-data-label opacity-70 uppercase">System_State</span>
+<span class="material-symbols-outlined opacity-70" data-icon="settings_input_component">settings_input_component</span>
+</div>
+<div class="flex flex-col gap-1">
+<p class="font-data-display text-xl font-bold">OPTIMIZED</p>
+<p class="font-body-md text-[12px] leading-tight opacity-80">NeuroLink v4.1 is currently operating at peak efficiency. No intervention required.</p>
+</div>
+<button class="mt-2 text-[10px] font-data-label border border-on-primary/30 py-1 hover:bg-white/10 transition-colors uppercase">
+                    Run_Diagnostics
+                </button>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Mobile -->
+<nav class="md:hidden bg-white/70 backdrop-blur-md fixed bottom-0 w-full z-50 border-t-[0.5px] border-outline-variant h-16 flex justify-around items-center">
+<button class="flex flex-col items-center justify-center text-secondary border-t-2 border-secondary pt-1">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+<span class="font-data-label text-[10px]">LIVE_FEED</span>
+</button>
+<button class="flex flex-col items-center justify-center text-outline pt-[3px] hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="neurology">neurology</span>
+<span class="font-data-label text-[10px]">ASSESSMENT</span>
+</button>
+<button class="flex flex-col items-center justify-center text-outline pt-[3px] hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-data-label text-[10px]">REPORTS</span>
+</button>
+<button class="flex flex-col items-center justify-center text-outline pt-[3px] hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="settings_input_component">settings_input_component</span>
+<span class="font-data-label text-[10px]">SYSTEM</span>
+</button>
+</nav>
+<script>
+        // Micro-interactions and subtle live updates
+        document.addEventListener('DOMContentLoaded', () => {
+            const displayValues = document.querySelectorAll('.font-data-display');
+            
+            // Subtle flicker effect on certain values to simulate real-time data
+            setInterval(() => {
+                const target = displayValues[Math.floor(Math.random() * displayValues.length)];
+                if (target && !isNaN(parseFloat(target.innerText))) {
+                    const originalValue = parseFloat(target.innerText);
+                    const variance = (Math.random() - 0.5) * 0.1;
+                    const newValue = (originalValue + variance).toFixed(2);
+                    
+                    target.style.opacity = '0.7';
+                    setTimeout(() => {
+                        target.innerText = newValue;
+                        target.style.opacity = '1';
+                    }, 50);
+                }
+            }, 3000);
+
+            // Active Scan indicator pulse
+            const scanChip = document.querySelector('.status-chip.border-secondary');
+            if (scanChip) {
+                setInterval(() => {
+                    scanChip.classList.toggle('opacity-50');
+                }, 1000);
+            }
+        });
+    </script>
+</body></html>

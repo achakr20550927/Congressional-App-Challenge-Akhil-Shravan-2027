@@ -1,0 +1,110 @@
+/*
+  NeuraTrack design tokens — "Calm Precision" system.
+  Source: NeuraTrack_Design_System.docx §3. Warm paper base, one deep-green
+  accent, terracotta secondary. Dark surfaces are reserved for the live
+  capture viewport only — never used decoratively elsewhere.
+*/
+:root {
+  /* "Bioluminescent" theme — sampled from the landing DNA video and applied
+     APP-WIDE so every screen matches: deep-ocean navy surfaces, ice-cyan
+     primary accent, warm coral secondary. Variable names are kept from the
+     original light theme so every component inherits the swap untouched
+     (--green = primary accent, --terra = warm accent, etc.). */
+  color-scheme: dark;
+
+  /* Color */
+  --canvas: #050b14; /* abyss navy — page background */
+  --canvas-dim: #0a1624;
+  --paper: #0c1929; /* card / raised surface */
+  --ink: #eaf4fb; /* primary text */
+  --ink-soft: #9fb6c9; /* secondary text */
+  --green: #7cc8f0; /* ice cyan — primary accent (was Signal Green) */
+  --green-dim: #3e6e8c;
+  --green-tint: rgba(124, 200, 240, 0.12);
+  --terra: #f09e7c; /* warm coral — CTA/warn accent (was Terracotta) */
+  --terra-tint: rgba(240, 158, 124, 0.14);
+  --gold: #d9bc6b; /* classifier / pattern-match card only */
+  --gold-tint: rgba(217, 188, 107, 0.12);
+  --hair: #22364d; /* hairline border */
+  --error: #ff7b72;
+  --error-tint: rgba(255, 123, 114, 0.16);
+  --viewport: #081120; /* live-capture surface */
+  --viewport-line: #1b2c42;
+
+  /* Typography */
+  --font-display: "Fraunces", Georgia, serif;
+  --font-ui: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --text-display: 56px;
+  --text-display-lh: 1.14;
+  --text-headline: 34px;
+  --text-headline-lh: 1.24;
+  --text-title: 22px;
+  --text-title-lh: 1.36;
+  --text-body: 17px;
+  --text-body-lh: 1.6;
+  --text-label: 13px;
+  --text-label-lh: 1.4;
+  --text-data-lg: 28px;
+  --text-data-lg-lh: 1.2;
+  --text-data-sm: 15px;
+  --text-data-sm-lh: 1.35;
+
+  /* Spacing (4px baseline rhythm) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --content-max: 1200px;
+  --gutter: 24px;
+
+  /* Shape */
+  --radius-control: 4px;
+  --radius-card: 12px;
+  --radius-full: 999px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --dur-micro: 150ms;
+  --dur-standard: 250ms;
+  --dur-scroll: 400ms;
+  --stagger: 40ms;
+
+  --focus-ring: 0 0 0 2px var(--canvas), 0 0 0 4px var(--green);
+}
+
+/* Large-text accessibility mode: scales the whole type ramp up one step
+   (PRD §11.3) without truncating data readouts. Toggled via a class on <html>. */
+:root.text-lg {
+  --text-display: 64px;
+  --text-headline: 38px;
+  --text-title: 24px;
+  --text-body: 19px;
+  --text-label: 14px;
+  --text-data-lg: 32px;
+  --text-data-sm: 17px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-micro: 1ms;
+    --dur-standard: 1ms;
+    --dur-scroll: 1ms;
+    --stagger: 0ms;
+  }
+}
+
+/* Manual override from Settings (PRD §11.3), independent of the OS setting. */
+:root.reduced-motion {
+  --dur-micro: 1ms;
+  --dur-standard: 1ms;
+  --dur-scroll: 1ms;
+  --stagger: 0ms;
+}
