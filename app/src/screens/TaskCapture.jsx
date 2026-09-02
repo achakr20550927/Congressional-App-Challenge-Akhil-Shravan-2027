@@ -21,6 +21,7 @@ import { buildInterpretation } from "../lib/interpretation.js";
 import { saveTaskResult, getSessionHistory } from "../lib/storage.js";
 import {
   createHandOverlay2D,
+  createClinicalHandHeatmap,
   renderMotionMap,
   renderStabilityChart,
   renderSpectrumChart,
@@ -92,6 +93,8 @@ export default function TaskCapture() {
   const recordStartRef = useRef(0);
   const rafRef = useRef(null);
   const lastVideoTimeRef = useRef(-1);
+  const clinicalHandRef = useRef(null);
+  const clinicalHandVizRef = useRef(null);
   const motionMapCanvasRef = useRef(null);
   const spectrumCanvasRef = useRef(null);
   const stabilityCanvasRef = useRef(null);
@@ -114,6 +117,7 @@ export default function TaskCapture() {
     () => () => {
       cancelAnimationFrame(rafRef.current);
       overlay2dRef.current?.dispose();
+      clinicalHandVizRef.current?.dispose();
       streamRef.current?.getTracks().forEach((track) => track.stop());
     },
     []
@@ -354,12 +358,18 @@ export default function TaskCapture() {
         if (!lm) return null;
         return denseMotionPoint(lm, handScale);
       }).filter(Boolean),
+      recordBufferRef.current
+        .map((f, idx) => {
+          if (idx % 2 !== 0) return null;
+          return f.result.landmarks && f.result.landmarks[0];
+        })
+        .filter(Boolean),
       primary.peakProminence || 0,
       quality
     );
   }
 
-  async function finalizeResult(taskResult, spectrum, trajectoryPoints, peakProminence = 0, quality = null) {
+  async function finalizeResult(taskResult, spectrum, trajectoryPoints, landmarkFrames = [], peakProminence = 0, quality = null) {
     // Fetch this task's prior history BEFORE saving the new result, so the
     // trend comparison ("vs. your last N sessions") doesn't include itself.
     const priorHistory = await getSessionHistory(null, task, 365).catch(() => []);
@@ -386,13 +396,17 @@ export default function TaskCapture() {
       saved = false;
     }
     setSaveError(!saved);
-    setResult({ ...fullResult, classification, interpretation, spectrum, trajectoryPoints });
+    setResult({ ...fullResult, classification, interpretation, spectrum, trajectoryPoints, landmarkFrames });
     setFlow("result");
 
     requestAnimationFrame(() => {
       if (spectrumCanvasRef.current && spectrum.length) renderSpectrumChart(spectrumCanvasRef.current, spectrum);
       if (motionMapCanvasRef.current && trajectoryPoints.length > 3) renderMotionMap(motionMapCanvasRef.current, trajectoryPoints);
       if (stabilityCanvasRef.current && trajectoryPoints.length > 3) renderStabilityChart(stabilityCanvasRef.current, trajectoryPoints);
+      if (clinicalHandRef.current && landmarkFrames.length > 3) {
+        clinicalHandVizRef.current?.dispose();
+        clinicalHandVizRef.current = createClinicalHandHeatmap(clinicalHandRef.current, landmarkFrames);
+      }
     });
   }
 
@@ -495,7 +509,7 @@ export default function TaskCapture() {
       asymmetryIndex: null,
       recordedAt: new Date().toISOString(),
     };
-    setTimeout(() => finalizeResult(taskResult, [], []), 150);
+    setTimeout(() => finalizeResult(taskResult, [], [], []), 150);
   }
 
   function resetToInstructions() {
@@ -585,6 +599,7 @@ export default function TaskCapture() {
           {flow === "result" && result && (
             <CaptureEvidence
               result={result}
+              clinicalHandRef={clinicalHandRef}
               motionMapCanvasRef={motionMapCanvasRef}
               spectrumCanvasRef={spectrumCanvasRef}
               stabilityCanvasRef={stabilityCanvasRef}
@@ -679,10 +694,11 @@ export default function TaskCapture() {
   );
 }
 
-function CaptureEvidence({ result, motionMapCanvasRef, spectrumCanvasRef, stabilityCanvasRef }) {
+function CaptureEvidence({ result, clinicalHandRef, motionMapCanvasRef, spectrumCanvasRef, stabilityCanvasRef }) {
   const hasTrajectory = result.trajectoryPoints?.length > 3;
+  const hasLandmarks = result.landmarkFrames?.length > 3;
   const hasSpectrum = result.spectrum?.length > 0;
-  if (!hasTrajectory && !hasSpectrum) return null;
+  if (!hasTrajectory && !hasLandmarks && !hasSpectrum) return null;
   const clarity = Math.round(Math.min(1, (result.peakProminence || 0) / .35) * 100);
   const quality = Math.round((result.captureQuality?.qualityScore || 0) * 100);
   return (
@@ -694,6 +710,7 @@ function CaptureEvidence({ result, motionMapCanvasRef, spectrumCanvasRef, stabil
         <div><span>Capture rate</span><strong>{result.captureQuality ? `${result.captureQuality.fps.toFixed(0)} fps` : "—"}</strong><i style={{ width: `${Math.min(100, (result.captureQuality?.fps || 0) / 30 * 100)}%` }} /></div>
       </div>
       <div className="evidence-grid">
+        {hasLandmarks && <figure className="data-figure clinical-hand-figure"><div><strong>3D clinical hand model</strong><span className="mono">GREEN → RED MOTION MAP</span></div><div ref={clinicalHandRef} className="clinical-hand-stage" aria-label="3D hand motion hotspot model" /><figcaption>An actual hand mesh is colored by measured landmark motion: green is steadier, red marks the strongest motion hotspots. Hand mesh: Poly by Google, CC BY 3.0.</figcaption></figure>}
         {hasTrajectory && <figure className="data-figure heatmap-figure"><div><strong>Motion heatmap</strong><span className="mono">LOW → HIGH DENSITY</span></div><canvas ref={motionMapCanvasRef} aria-label="Full-hand motion density heatmap" /><figcaption>Position is normalized to your hand size. Warmer cells mean the tracked hand center spent more time there.</figcaption></figure>}
         {hasTrajectory && <figure className="data-figure"><div><strong>Movement energy</strong><span className="mono">10 SECOND WINDOW</span></div><div className="chart-frame"><canvas ref={stabilityCanvasRef} aria-label="Movement energy over time" /></div><figcaption>Relative movement intensity over the recording—not a diagnostic score.</figcaption></figure>}
         {hasSpectrum && <figure className="data-figure"><div><strong>Frequency spectrum</strong><span className="mono">POWER BY HZ</span></div><div className="chart-frame"><canvas ref={spectrumCanvasRef} aria-label="Frequency spectrum bar chart" /></div><figcaption>A narrow peak suggests repeated rhythm; a broad spread usually reflects irregular movement or noise.</figcaption></figure>}

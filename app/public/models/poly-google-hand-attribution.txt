@@ -1,0 +1,7 @@
+Model: Hand
+Creator: Poly by Google
+Source: https://poly.pizza/m/btWmPNVSKUc
+License: Creative Commons Attribution 3.0
+License URL: https://creativecommons.org/licenses/by/3.0/
+
+Used in NeuraTrack as the anatomical base mesh for the 3D clinical hand motion map.
