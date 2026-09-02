@@ -43,6 +43,8 @@ function assembleFeatures(model, { result, peakProminence, quality }) {
     dominant_frequency_hz: result.frequencyHz ?? 0,
     spectral_concentration: peakProminence ?? 0,
     tremor_band_power_ratio: result.tremorBandPowerRatio ?? 0,
+    organized_tremor_score: Math.sqrt(Math.max(0, (peakProminence ?? 0) * (result.tremorBandPowerRatio ?? 0))),
+    canonical_frequency_score: Math.exp(-0.5 * (((result.frequencyHz ?? 0) - 5) / 1.5) ** 2),
     amplitude_pct_hand_width: result.amplitudePctHand ?? 0,
     tap_rate_hz: result.tapRateHz ?? 0,
     tap_decrement_pct: result.tapDecrementPct ?? 0,
@@ -84,12 +86,21 @@ export function runModel(model, subModelName, ctx) {
   for (let i = 1; i < probs.length; i++) if (probs[i] > probs[bestIdx]) bestIdx = i;
   const label = sub.labels[bestIdx];
 
-  // Per-feature contribution to the winning class = coef[best][i] * z[i].
-  // Positive contributions are what pushed the prediction toward this label —
-  // an honest, model-derived importance signal (unlike a hand-assigned one).
+  // Explain the winning class relative to the runner-up. For a binary model,
+  // this is the exact standardized log-odds contribution of each feature.
+  // Using the coefficient difference also explains the steady class (whose
+  // exported sklearn coefficient row is intentionally all zeroes).
+  const alternatives = probs
+    .map((probability, index) => ({ probability, index }))
+    .filter((item) => item.index !== bestIdx)
+    .sort((a, b) => b.probability - a.probability);
+  const runnerUpIdx = alternatives[0]?.index ?? bestIdx;
   const contributions = sub.featureNames
-    .map((name, i) => ({ feature: name, contribution: sub.coef[bestIdx][i] * z[i] }))
-    .filter((c) => c.contribution > 0.05)
+    .map((name, i) => ({
+      feature: name,
+      contribution: (sub.coef[bestIdx][i] - sub.coef[runnerUpIdx][i]) * z[i],
+    }))
+    .filter((item) => item.contribution > 0.05)
     .sort((a, b) => b.contribution - a.contribution);
 
   const probMap = {};

@@ -84,10 +84,19 @@ def analyze_channel(x, fs=FS, lo=2.0, hi=15.0, tlo=3.0, thi=7.0):
     total_energy = float(np.sum(bmag ** 2)) or 1e-12
     tremor_band = (bfreq >= tlo) & (bfreq <= thi)
     tremor_power = float(np.sum(bmag[tremor_band] ** 2))
+    concentration = (peak ** 2) / total_energy
+    tremor_ratio = tremor_power / total_energy
+    # Nonlinear but still sensor-transferable summaries. The first rewards a
+    # narrow, organized rhythm inside the tremor band; the second encodes how
+    # close the dominant rhythm is to the canonical 5 Hz rest-tremor center.
+    organized_tremor_score = float(np.sqrt(max(0.0, concentration * tremor_ratio)))
+    canonical_frequency_score = float(np.exp(-0.5 * ((float(bfreq[peak_i]) - 5.0) / 1.5) ** 2))
     return {
         "dominant_frequency_hz": float(bfreq[peak_i]),
-        "spectral_concentration": (peak ** 2) / total_energy,
-        "tremor_band_power_ratio": tremor_power / total_energy,
+        "spectral_concentration": concentration,
+        "tremor_band_power_ratio": tremor_ratio,
+        "organized_tremor_score": organized_tremor_score,
+        "canonical_frequency_score": canonical_frequency_score,
         "_tremor_power": tremor_power,  # for best-axis selection only
     }
 
@@ -143,18 +152,17 @@ def build_dataset():
     return rows
 
 
-NUM_FEATS = ["dominant_frequency_hz", "spectral_concentration", "tremor_band_power_ratio"]
+NUM_FEATS = ["dominant_frequency_hz", "spectral_concentration", "tremor_band_power_ratio", "organized_tremor_score", "canonical_frequency_score"]
 FEATURE_NAMES = NUM_FEATS + [f"task={t}" for t in APP_TASKS]
 
 
 def to_matrix(rows):
     X = np.zeros((len(rows), len(FEATURE_NAMES)))
     for i, r in enumerate(rows):
-        X[i, 0] = r["dominant_frequency_hz"]
-        X[i, 1] = r["spectral_concentration"]
-        X[i, 2] = r["tremor_band_power_ratio"]
+        for j, feature in enumerate(NUM_FEATS):
+            X[i, j] = r[feature]
         for j, t in enumerate(APP_TASKS):
-            X[i, 3 + j] = 1.0 if r["task"] == t else 0.0
+            X[i, len(NUM_FEATS) + j] = 1.0 if r["task"] == t else 0.0
     y = np.array([r["label"] for r in rows])
     return X, y
 
@@ -249,9 +257,9 @@ def main():
         "intercept": intercept2,
     }
     bundle = {
-        "version": "2.1.0-pads-real-groupcv",
+        "version": "2.2.0-pads-real-engineered",
         "trainedOn": "PADS smartwatch dataset (PhysioNet, REAL patients: 79 Healthy vs 319 Parkinson's/Essential-Tremor/Atypical). Rest+postural tasks. Stratified group cross-validation by subject; final model refit on all real recordings.",
-        "note": "Logistic regression on REAL patient accelerometer recordings, using only sensor-transferable features (dominant frequency, spectral concentration, tremor-band power ratio). Outputs a signal-resemblance probability, never a diagnosis.",
+        "note": "Logistic regression on REAL patient accelerometer recordings, using sensor-transferable frequency, concentration, tremor-band, and organized-rhythm features. Outputs a signal-resemblance probability, never a diagnosis.",
         "tasksCovered": APP_TASKS,
         "metrics": {
             "validation": "5-fold stratified group cross-validation (subjects never cross folds)",

@@ -9,6 +9,8 @@ import {
   computeAsymmetryIndex,
   generateIdealSpiral,
 } from "./signal.js";
+import { readFileSync } from "node:fs";
+import { runModel } from "./model.js";
 
 let pass = 0;
 let fail = 0;
@@ -148,6 +150,20 @@ function approx(a, b, eps) {
   assert(approx(computeAsymmetryIndex(10, 5), 0.6667, 0.001), "asymmetry: 10 vs 5 should be ~0.667");
   assert(computeAsymmetryIndex(0, 0) === 0, "asymmetry: both-zero should not divide by zero");
   assert(computeAsymmetryIndex(-5, 100) <= 1, "asymmetry: result must clamp to [0,1]");
+}
+
+// --- shipped PADS bundle: inference stays finite, normalized, and explainable ---
+{
+  const bundle = JSON.parse(readFileSync(new URL("../../public/models/neuratrack-pads-model.json", import.meta.url), "utf8"));
+  const out = runModel(bundle, "tremor_reference", {
+    result: { task: "rest", frequencyHz: 5, tremorBandPowerRatio: 0.82 },
+    peakProminence: 0.42,
+    quality: { qualityScore: 0.95, coverage: 0.98 },
+  });
+  const probabilitySum = Object.values(out.probs).reduce((sum, value) => sum + value, 0);
+  assert(Number.isFinite(out.confidence), "PADS model: confidence should be finite");
+  assert(approx(probabilitySum, 1, 0.002), `PADS model: probabilities should sum to 1, got ${probabilitySum}`);
+  assert(out.contributions.length > 0, "PADS model: should return model-derived explanation drivers");
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

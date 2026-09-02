@@ -283,7 +283,7 @@ export function createHandOverlay2D(canvas) {
   };
 }
 
-/** Renders an interpretable, hand-relative fingertip density map. */
+/** Renders an interpretable, hand-scale-normalized motion density map. */
 export function renderMotionMap(canvas, points) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const width = Math.max(420, canvas.clientWidth || 480);
@@ -293,33 +293,76 @@ export function renderMotionMap(canvas, points) {
   canvas.style.aspectRatio = `${width}/${height}`;
   const ctx = canvas.getContext("2d");
   ctx.scale(dpr, dpr);
-  const pad = 30;
+  const pad = 24;
   ctx.fillStyle = "#071522";
   ctx.fillRect(0, 0, width, height);
-  ctx.strokeStyle = "rgba(148,203,230,.12)";
-  for (let i = 0; i <= 8; i++) {
-    const x = pad + ((width - pad * 2) * i) / 8;
-    ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, height - pad); ctx.stroke();
-  }
-  for (let i = 0; i <= 5; i++) {
-    const y = pad + ((height - pad * 2) * i) / 5;
-    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(width - pad, y); ctx.stroke();
-  }
   if (!points?.length) return;
+  const quantile = (values, q) => [...values].sort((a, b) => a - b)[Math.floor((values.length - 1) * q)];
   const xs = points.map((p) => p.x), ys = points.map((p) => p.y);
-  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  const minX = quantile(xs, .02), maxX = quantile(xs, .98), minY = quantile(ys, .02), maxY = quantile(ys, .98);
   const rx = maxX - minX || 1, ry = maxY - minY || 1;
-  const plotted = points.map((p) => ({ x: pad + ((p.x - minX) / rx) * (width - pad * 2), y: pad + ((p.y - minY) / ry) * (height - pad * 2) }));
-  for (const p of plotted) {
-    const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 18);
-    glow.addColorStop(0, "rgba(251,191,102,.075)"); glow.addColorStop(1, "rgba(74,182,228,0)");
-    ctx.fillStyle = glow; ctx.fillRect(p.x - 18, p.y - 18, 36, 36);
-  }
+  const cols = 20, rows = 12;
+  const bins = Array.from({ length: rows }, () => Array(cols).fill(0));
+  const plotted = points.map((p) => {
+    const nx = Math.max(0, Math.min(.999, (p.x - minX) / rx));
+    const ny = Math.max(0, Math.min(.999, (p.y - minY) / ry));
+    bins[Math.floor(ny * rows)][Math.floor(nx * cols)] += 1;
+    return { x: pad + nx * (width - pad * 2), y: pad + ny * (height - pad * 2) };
+  });
+  // Smooth neighboring bins so the chart communicates dwell density rather
+  // than showing a noisy one-cell-per-frame occupancy grid.
+  const density = bins.map((row, y) => row.map((_, x) => {
+    let sum = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const weight = dx === 0 && dy === 0 ? 1 : .42;
+      sum += (bins[y + dy]?.[x + dx] || 0) * weight;
+    }
+    return sum;
+  }));
+  const maxDensity = Math.max(1, ...density.flat());
+  const cellW = (width - pad * 2) / cols, cellH = (height - pad * 2) / rows;
+  density.forEach((row, y) => row.forEach((value, x) => {
+    const t = value / maxDensity;
+    if (t < .025) return;
+    const red = Math.round(45 + 206 * Math.pow(t, 1.35));
+    const green = Math.round(118 + 73 * t);
+    const blue = Math.round(175 - 75 * t);
+    ctx.fillStyle = `rgba(${red},${green},${blue},${.12 + t * .78})`;
+    ctx.beginPath();
+    ctx.roundRect(pad + x * cellW + 1.5, pad + y * cellH + 1.5, cellW - 3, cellH - 3, 3);
+    ctx.fill();
+  }));
+  ctx.strokeStyle = "rgba(166,222,246,.18)";
+  ctx.lineWidth = 1;
   ctx.beginPath();
   plotted.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
-  ctx.strokeStyle = "rgba(126,214,246,.78)"; ctx.lineWidth = 1.6; ctx.lineJoin = "round"; ctx.stroke();
+  ctx.stroke();
+  for (let i = 0; i <= 4; i++) {
+    const x = pad + ((width - pad * 2) * i) / 4;
+    ctx.strokeStyle = "rgba(148,203,230,.08)";
+    ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, height - pad); ctx.stroke();
+  }
   const mark = (p, color) => { ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill(); };
   mark(plotted[0], "#7ed6f6"); mark(plotted[plotted.length - 1], "#fbbf66");
+}
+
+/** Windowed movement energy over time, derived from the same trajectory. */
+export function renderStabilityChart(canvasEl, points) {
+  const existing = Chart.getChart(canvasEl);
+  if (existing) existing.destroy();
+  const speeds = points.slice(1).map((p, i) => Math.hypot(p.x - points[i].x, p.y - points[i].y));
+  const bucketSize = Math.max(1, Math.floor(speeds.length / 32));
+  const buckets = [];
+  for (let i = 0; i < speeds.length; i += bucketSize) {
+    const chunk = speeds.slice(i, i + bucketSize);
+    buckets.push(chunk.reduce((sum, value) => sum + value, 0) / chunk.length);
+  }
+  const max = Math.max(...buckets, 1e-6);
+  return new Chart(canvasEl, {
+    type: "line",
+    data: { labels: buckets.map((_, i) => i), datasets: [{ data: buckets.map(v => v / max * 100), borderColor: "#7ed6f6", backgroundColor: "rgba(126,214,246,.12)", fill: true, tension: .35, pointRadius: 0, borderWidth: 2 }] },
+    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 260 }, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { min: 0, max: 100, ticks: { display: false }, grid: { color: "rgba(124,200,240,.1)" }, border: { display: false } } } },
+  });
 }
 
 const chartFont = { family: "'IBM Plex Mono', monospace", size: 10 };
@@ -341,6 +384,8 @@ export function renderSpectrumChart(canvasEl, spectrum) {
       ],
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: false,
       animation: { duration: 300 },
       plugins: { legend: { display: false } },
       scales: {

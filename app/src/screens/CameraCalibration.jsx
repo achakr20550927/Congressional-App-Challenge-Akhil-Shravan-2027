@@ -27,7 +27,7 @@ export default function CameraCalibration() {
     setState("requesting");
     setErrorKind(null);
     try {
-      const stream = await startCameraStream({ video: { width: 640, height: 480 }, audio: false });
+      const stream = await startCameraStream({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" }, audio: false });
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = stream;
       const video = videoRef.current;

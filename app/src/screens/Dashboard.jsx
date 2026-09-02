@@ -42,6 +42,12 @@ export default function Dashboard() {
         </Link>
       </section>
 
+      <section className={`mode-purpose mode-purpose-${mode}`} aria-label={`${mode} view explanation`}>
+        <span className="mono">{mode === "clinician" ? "CLINICIAN VIEW" : "PATIENT VIEW"}</span>
+        <p>{mode === "clinician" ? "Supervised capture, recording quality, raw signal evidence, model cross-checks, and export tools." : "Guided self-checks, plain-language feedback, and clear guidance on when a repeated pattern may be worth discussing."}</p>
+        {mode === "clinician" && <Link to="/export" className="mode-purpose-link">Create review report →</Link>}
+      </section>
+
       {mode === "clinician" && (
         <section className="clinician-overview" aria-label="Clinical session summary">
           <div><span className="mono">RECORDINGS</span><strong>{history.length}</strong><p>Stored on this device</p></div>

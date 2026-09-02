@@ -22,6 +22,7 @@ import { saveTaskResult, getSessionHistory } from "../lib/storage.js";
 import {
   createHandOverlay2D,
   renderMotionMap,
+  renderStabilityChart,
   renderSpectrumChart,
   renderAmplitudeChart,
   pushAmplitudeSample,
@@ -33,6 +34,7 @@ import DisclaimerBanner from "../components/DisclaimerBanner.jsx";
 
 const RECORD_MS = 10000;
 const SPIRAL_MAX_MS = 30000;
+const FULL_HAND_LANDMARKS = Array.from({ length: 21 }, (_, index) => index);
 
 const TASK_META = {
   rest: { titleKey: "taskRestTitle", guideKey: "taskRestGuide", mode: "camera", band: [2, 15] },
@@ -45,6 +47,20 @@ const TASK_META = {
 function dist(a, b) {
   const dx = a.x - b.x, dy = a.y - b.y, dz = (a.z || 0) - (b.z || 0);
   return Math.sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+// A full-hand consensus point is less sensitive to one fingertip being
+// briefly hidden or noisy than the old single-index-fingertip signal. We keep
+// absolute hand motion here: subtracting the palm would also subtract rigid
+// hand tremor. Slow arm/camera drift is removed by the signal detrending step.
+function denseMotionPoint(lm, scale = 1) {
+  return FULL_HAND_LANDMARKS.reduce(
+    (point, index) => ({
+      x: point.x + lm[index].x / FULL_HAND_LANDMARKS.length / scale,
+      y: point.y + lm[index].y / FULL_HAND_LANDMARKS.length / scale,
+    }),
+    { x: 0, y: 0 }
+  );
 }
 
 export default function TaskCapture() {
@@ -78,6 +94,7 @@ export default function TaskCapture() {
   const lastVideoTimeRef = useRef(-1);
   const motionMapCanvasRef = useRef(null);
   const spectrumCanvasRef = useRef(null);
+  const stabilityCanvasRef = useRef(null);
 
   // Spiral-only refs
   const spiralCanvasRef = useRef(null);
@@ -106,7 +123,7 @@ export default function TaskCapture() {
     setCameraState("requesting");
     setCameraError(null);
     try {
-      const stream = await startCameraStream({ video: { width: 640, height: 480 }, audio: false });
+      const stream = await startCameraStream({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" }, audio: false });
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = stream;
       const video = videoRef.current;
@@ -195,7 +212,7 @@ export default function TaskCapture() {
     const lm = res.landmarks && res.landmarks[0];
     if (!lm || !ampChartRef.current) return;
     const win = fingertipWinRef.current;
-    win.push({ x: lm[8].x, y: lm[8].y });
+    win.push(denseMotionPoint(lm, handScale));
     if (win.length > 15) win.shift();
     if (win.length < 5) return;
     let mx = 0, my = 0;
@@ -208,7 +225,7 @@ export default function TaskCapture() {
     let s = 0;
     for (const p of win) s += (p.x - mx) ** 2 + (p.y - my) ** 2;
     const rms = Math.sqrt(s / win.length);
-    const pctOfHand = (rms / handScale) * 100;
+    const pctOfHand = rms * 100;
     pushAmplitudeSample(ampChartRef.current, ampSeriesRef.current, Number(pctOfHand.toFixed(2)));
   }
 
@@ -232,11 +249,6 @@ export default function TaskCapture() {
 
     const durationSec = Math.max(0.1, (frames.at(-1).t - frames[0].t) / 1000);
     const sampleRate = Math.max(15, Math.min(60, (frames.length - 1) / durationSec));
-    const palmCenter = (lm) => [0, 5, 9, 13, 17].reduce(
-      (p, i) => ({ x: p.x + lm[i].x / 5, y: p.y + lm[i].y / 5 }),
-      { x: 0, y: 0 }
-    );
-
     if (meta.mode === "camera-tap") {
       const samples = frames.map((f) => ({ t: f.t, value: dist(f.result.landmarks[handIndex][4], f.result.landmarks[handIndex][8]) / handScale }));
       const uniform = resampleToUniformGrid(samples, sampleRate);
@@ -245,12 +257,20 @@ export default function TaskCapture() {
       return { tapCount, tapRateHz, amplitudeDecrementPct, rmsAmplitude, frequency: 0 };
     }
 
-    let samples = frames.map((f) => {
-      const lm = f.result.landmarks[handIndex];
-      const palm = palmCenter(lm);
-      const fingertips = [4, 8, 12, 16, 20];
-      return { t: f.t, value: fingertips.reduce((sum, i) => sum + lm[i].x - palm.x, 0) / fingertips.length / handScale };
+    const densePoints = frames.map((frame) => ({ t: frame.t, ...denseMotionPoint(frame.result.landmarks[handIndex], handScale) }));
+    const mean = densePoints.reduce((sum, point) => ({ x: sum.x + point.x / densePoints.length, y: sum.y + point.y / densePoints.length }), { x: 0, y: 0 });
+    let xx = 0, yy = 0, xy = 0;
+    densePoints.forEach((point) => {
+      const x = point.x - mean.x, y = point.y - mean.y;
+      xx += x * x; yy += y * y; xy += x * y;
     });
+    // Project the 2D hand-relative signal onto its principal motion axis. This
+    // keeps tremor magnitude stable when a phone rotates or the hand is angled.
+    const theta = 0.5 * Math.atan2(2 * xy, xx - yy);
+    let samples = densePoints.map((point) => ({
+      t: point.t,
+      value: (point.x - mean.x) * Math.cos(theta) + (point.y - mean.y) * Math.sin(theta),
+    }));
     if (task === "pronation") {
       let previous = null;
       let offset = 0;
@@ -332,8 +352,7 @@ export default function TaskCapture() {
       recordBufferRef.current.map((f) => {
         const lm = f.result.landmarks && f.result.landmarks[0];
         if (!lm) return null;
-        const palm = [0, 5, 9, 13, 17].reduce((p, i) => ({ x: p.x + lm[i].x / 5, y: p.y + lm[i].y / 5 }), { x: 0, y: 0 });
-        return { x: (lm[8].x - palm.x) / handScale, y: (lm[8].y - palm.y) / handScale };
+        return denseMotionPoint(lm, handScale);
       }).filter(Boolean),
       primary.peakProminence || 0,
       quality
@@ -373,6 +392,7 @@ export default function TaskCapture() {
     requestAnimationFrame(() => {
       if (spectrumCanvasRef.current && spectrum.length) renderSpectrumChart(spectrumCanvasRef.current, spectrum);
       if (motionMapCanvasRef.current && trajectoryPoints.length > 3) renderMotionMap(motionMapCanvasRef.current, trajectoryPoints);
+      if (stabilityCanvasRef.current && trajectoryPoints.length > 3) renderStabilityChart(stabilityCanvasRef.current, trajectoryPoints);
     });
   }
 
@@ -493,10 +513,10 @@ export default function TaskCapture() {
         <div className="capture-protocol-meta"><span><i /> On-device</span><span>{meta.mode === "canvas" ? "≤30 sec" : "10 sec"}</span></div>
       </header>
 
-      <div className="capture-layout">
-        <div>
+      <div className={`capture-layout ${flow === "result" ? "result-layout" : ""}`}>
+        <div className="capture-stage-column">
           <div
-            className={flow === "recording" ? "card-active" : ""}
+            className={`capture-viewport ${flow === "recording" ? "card-active" : ""}`}
             style={{
               background: meta.mode === "canvas" ? "var(--paper)" : "var(--viewport)",
               border: meta.mode === "canvas" ? "1px solid var(--hair)" : "1px solid var(--viewport-line)",
@@ -555,16 +575,25 @@ export default function TaskCapture() {
             )}
           </div>
 
-          <p className="mono" style={{ marginTop: 12 }}>
+          <p className="mono capture-status-line">
             {flow === "instructions" && (meta.mode === "canvas" ? t("captureReadyCanvas") : cameraState === "ready" ? t("captureReady") : "")}
             {flow === "recording" && t("captureRecording")}
             {flow === "analyzing" && t("captureAnalyzing")}
             {flow === "result" && t("captureResultReady")}
           </p>
+
+          {flow === "result" && result && (
+            <CaptureEvidence
+              result={result}
+              motionMapCanvasRef={motionMapCanvasRef}
+              spectrumCanvasRef={spectrumCanvasRef}
+              stabilityCanvasRef={stabilityCanvasRef}
+            />
+          )}
         </div>
 
-        <div className="stack">
-          <div className="card">
+        <div className="stack capture-side-column">
+          {flow !== "result" && <div className="card">
             <span className="mono">{t("navLiveFeed")}</span>
             <h3 style={{ marginTop: 6, marginBottom: 8 }}>{title}</h3>
             <p style={{ color: "var(--ink-soft)", fontSize: 15 }}>{guide}</p>
@@ -580,9 +609,9 @@ export default function TaskCapture() {
                 </span>
               </div>
             )}
-          </div>
+          </div>}
 
-          {meta.mode !== "canvas" && (
+          {meta.mode !== "canvas" && flow !== "result" && (
             <div className="card">
               <h3 style={{ marginBottom: 4 }}>{t("liveAmplitude")}</h3>
               <p className="data-sm" style={{ color: "var(--ink-soft)", marginBottom: 8 }}>
@@ -593,7 +622,7 @@ export default function TaskCapture() {
           )}
 
           {flow === "result" && result && (
-            <ResultCard result={result} appMode={appMode} saveError={saveError} t={t} spectrumCanvasRef={spectrumCanvasRef} motionMapCanvasRef={motionMapCanvasRef} />
+            <ResultCard result={result} appMode={appMode} saveError={saveError} t={t} />
           )}
         </div>
       </div>
@@ -650,14 +679,37 @@ export default function TaskCapture() {
   );
 }
 
-function ResultCard({ result, appMode, saveError, t, spectrumCanvasRef, motionMapCanvasRef }) {
+function CaptureEvidence({ result, motionMapCanvasRef, spectrumCanvasRef, stabilityCanvasRef }) {
+  const hasTrajectory = result.trajectoryPoints?.length > 3;
+  const hasSpectrum = result.spectrum?.length > 0;
+  if (!hasTrajectory && !hasSpectrum) return null;
+  const clarity = Math.round(Math.min(1, (result.peakProminence || 0) / .35) * 100);
+  const quality = Math.round((result.captureQuality?.qualityScore || 0) * 100);
+  return (
+    <section className="capture-evidence" aria-label="Recording evidence">
+      <div className="evidence-heading"><div><span className="eyebrow mono">Recording evidence</span><h2>What the camera measured</h2></div><span className="evidence-quality">{quality || "—"}% quality</span></div>
+      <div className="evidence-metrics">
+        <div><span>Signal clarity</span><strong>{clarity}%</strong><i style={{ width: `${clarity}%` }} /></div>
+        <div><span>Hand visibility</span><strong>{result.captureQuality ? `${Math.round(result.captureQuality.coverage * 100)}%` : "—"}</strong><i style={{ width: `${Math.round((result.captureQuality?.coverage || 0) * 100)}%` }} /></div>
+        <div><span>Capture rate</span><strong>{result.captureQuality ? `${result.captureQuality.fps.toFixed(0)} fps` : "—"}</strong><i style={{ width: `${Math.min(100, (result.captureQuality?.fps || 0) / 30 * 100)}%` }} /></div>
+      </div>
+      <div className="evidence-grid">
+        {hasTrajectory && <figure className="data-figure heatmap-figure"><div><strong>Motion heatmap</strong><span className="mono">LOW → HIGH DENSITY</span></div><canvas ref={motionMapCanvasRef} aria-label="Full-hand motion density heatmap" /><figcaption>Position is normalized to your hand size. Warmer cells mean the tracked hand center spent more time there.</figcaption></figure>}
+        {hasTrajectory && <figure className="data-figure"><div><strong>Movement energy</strong><span className="mono">10 SECOND WINDOW</span></div><div className="chart-frame"><canvas ref={stabilityCanvasRef} aria-label="Movement energy over time" /></div><figcaption>Relative movement intensity over the recording—not a diagnostic score.</figcaption></figure>}
+        {hasSpectrum && <figure className="data-figure"><div><strong>Frequency spectrum</strong><span className="mono">POWER BY HZ</span></div><div className="chart-frame"><canvas ref={spectrumCanvasRef} aria-label="Frequency spectrum bar chart" /></div><figcaption>A narrow peak suggests repeated rhythm; a broad spread usually reflects irregular movement or noise.</figcaption></figure>}
+      </div>
+    </section>
+  );
+}
+
+function ResultCard({ result, appMode, saveError, t }) {
   const isTap = result.task === "tap";
   const isSpiral = result.task === "spiral";
   const isClinician = appMode === "clinician";
   const interp = result.interpretation;
 
   return (
-    <div className="card">
+    <div className="card result-card">
       <h3 style={{ marginBottom: 10 }}>{t("resultsTitle")}</h3>
 
       {/* Check-in rating FIRST — the one thing a non-technical user needs.
@@ -670,14 +722,6 @@ function ResultCard({ result, appMode, saveError, t, spectrumCanvasRef, motionMa
         </div>
       )}
 
-      {result.trajectoryPoints?.length > 3 && (
-        <figure className="motion-map-card">
-          <div className="spread"><strong>Motion density map</strong><span className="mono">START · END</span></div>
-          <canvas ref={motionMapCanvasRef} aria-label="Recorded fingertip motion density map" />
-          <figcaption>Hand-relative movement across this recording. Brighter regions show where the fingertip spent more time.</figcaption>
-        </figure>
-      )}
-
       <div className="grid-2" style={{ gap: 10 }}>
         {!isTap && !isSpiral && <MetricCard label={t("metricFrequency")} value={result.frequencyHz ? result.frequencyHz.toFixed(2) : "—"} unit="Hz" />}
         {!isTap && !isSpiral && <MetricCard label={t("metricAmplitude")} value={result.rmsAmplitude ? result.rmsAmplitude.toFixed(4) : "—"} />}
@@ -687,11 +731,7 @@ function ResultCard({ result, appMode, saveError, t, spectrumCanvasRef, motionMa
         {result.asymmetryIndex != null && <MetricCard label={t("metricAsymmetry")} value={(result.asymmetryIndex * 100).toFixed(0)} unit="%" />}
       </div>
 
-      {result.spectrum && result.spectrum.length > 0 && (
-        <div style={{ marginTop: 14 }}>
-          <canvas ref={spectrumCanvasRef} height={100} />
-        </div>
-      )}
+      <DoctorGuidance result={result} />
 
       {/* Primary finding — headline + plain-language explanation, task-specific (see interpretation.js) */}
       <div style={{ marginTop: 14, background: "var(--gold-tint)", border: "1px solid var(--gold)", borderRadius: 10, padding: 14 }}>
@@ -760,8 +800,14 @@ function ResultCard({ result, appMode, saveError, t, spectrumCanvasRef, motionMa
       )}
 
       {isClinician && (
-        <div className="card" style={{ marginTop: 14, padding: 14, background: "var(--canvas-dim)" }}>
-          <span className="mono">{t("clinicianDetail")}</span>
+        <div className="card clinician-result-detail">
+          <div className="spread"><span className="mono">{t("clinicianDetail")}</span><span className="clinician-only-badge">CLINICIAN ONLY</span></div>
+          <div className="clinician-measure-grid">
+            <div><span>Peak concentration</span><strong>{Math.round((result.peakProminence || 0) * 100)}%</strong></div>
+            <div><span>3–7 Hz power</span><strong>{Math.round((result.tremorBandPowerRatio || 0) * 100)}%</strong></div>
+            <div><span>Visibility</span><strong>{result.captureQuality ? `${Math.round(result.captureQuality.coverage * 100)}%` : "—"}</strong></div>
+            <div><span>Frame rate</span><strong>{result.captureQuality ? result.captureQuality.fps.toFixed(1) : "—"}</strong></div>
+          </div>
           <p className="data-sm" style={{ color: "var(--ink-soft)", marginTop: 8 }}>
             <strong>{t("rationale")}:</strong> {result.classification.rationale}
           </p>
@@ -785,6 +831,21 @@ function ResultCard({ result, appMode, saveError, t, spectrumCanvasRef, motionMa
                   ? ` ${t("mlAucNote")} ${result.classification.modelCrossCheck.metrics.subjectAuc} (${t("mlPerPerson")})${result.classification.modelCrossCheck.metrics.recordingAuc != null ? `, ${result.classification.modelCrossCheck.metrics.recordingAuc} (${t("mlPerRecording")})` : ""}.`
                   : ""}
               </p>
+              {result.classification.modelCrossCheck.contributions?.length > 0 && (
+                <div className="model-driver-list" aria-label="Model signal drivers">
+                  <span className="data-sm">Strongest model signals</span>
+                  {result.classification.modelCrossCheck.contributions.slice(0, 4).map((item) => {
+                    const max = result.classification.modelCrossCheck.contributions[0].contribution || 1;
+                    return (
+                      <div className="model-driver" key={item.feature}>
+                        <div className="spread"><span>{humanizeLabel(item.feature)}</span><span className="mono">{Math.round(item.contribution / max * 100)}</span></div>
+                        <div className="model-driver-track"><i style={{ width: `${Math.max(8, item.contribution / max * 100)}%` }} /></div>
+                      </div>
+                    );
+                  })}
+                  <p>These bars explain this model output; they are not disease-risk percentages.</p>
+                </div>
+              )}
             </div>
           )}
 
@@ -823,6 +884,34 @@ function ResultCard({ result, appMode, saveError, t, spectrumCanvasRef, motionMa
         </p>
       )}
     </div>
+  );
+}
+
+function DoctorGuidance({ result }) {
+  const tier = result.interpretation?.rating?.tier || "retry";
+  const content = {
+    steady: {
+      label: "No immediate flag from this recording",
+      body: "No clear repeating pattern stood out. This does not rule out Parkinson’s or another condition. Speak with a clinician if symptoms persist, worsen, or affect daily activities.",
+    },
+    watch: {
+      label: "Repeat, then consider discussing",
+      body: "This recording showed a change worth rechecking under similar conditions. If it repeats, is one-sided, or affects daily activities, share your trend report with a clinician.",
+    },
+    discuss: {
+      label: "Worth speaking with a clinician",
+      body: "A repeated movement pattern stood out clearly enough to discuss—especially if it is new, worsening, one-sided, or paired with stiffness, slowness, or balance changes.",
+    },
+    retry: {
+      label: "Repeat before interpreting",
+      body: "The recording quality was not strong enough for a useful result. Improve lighting, keep the full hand visible, and run the task again.",
+    },
+  }[tier];
+  return (
+    <section className={`doctor-guidance guidance-${tier}`}>
+      <div className="guidance-icon" aria-hidden="true">{tier === "discuss" ? "!" : tier === "retry" ? "↻" : "✓"}</div>
+      <div><span className="mono">SHOULD I SPEAK WITH A DOCTOR?</span><h3>{content.label}</h3><p>{content.body}</p></div>
+    </section>
   );
 }
 

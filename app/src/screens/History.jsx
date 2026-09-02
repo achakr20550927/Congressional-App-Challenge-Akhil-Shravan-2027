@@ -16,7 +16,7 @@ const TASK_FILTERS = [
 ];
 
 export default function History() {
-  const { t, language } = useAppState();
+  const { t, language, mode } = useAppState();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [results, setResults] = useState(null);
@@ -87,7 +87,7 @@ export default function History() {
   return (
     <div className="wrap history-page">
       <header className="app-page-header app-page-header-row">
-        <div><span className="eyebrow mono">Longitudinal view</span><h1>{t("historyTitle")}</h1><p>Your own repeated measurements are more useful than a single snapshot.</p></div>
+        <div><span className="eyebrow mono">{mode === "clinician" ? "Clinical longitudinal review" : "Your movement history"}</span><h1>{mode === "clinician" ? "Review recorded assessments" : t("historyTitle")}</h1><p>{mode === "clinician" ? "Compare signal quality, task coverage, and changes across supervised recordings." : "Your own repeated measurements are more useful than a single snapshot."}</p></div>
         <div className="row" style={{ gap: 10 }}>
           <button className="btn btn-ghost btn-sm" onClick={handleExportCsv}>
             {t("exportCsv")}
@@ -97,6 +97,11 @@ export default function History() {
           </button>
         </div>
       </header>
+
+      <div className={`mode-purpose mode-purpose-${mode}`}>
+        <span className="mono">{mode === "clinician" ? "CLINICIAN VIEW" : "PATIENT VIEW"}</span>
+        <p>{mode === "clinician" ? "Raw measurements, capture quality, model cross-checks, and exports are available for review—not diagnosis." : "Plain-language patterns and next steps stay prominent; technical evidence remains available inside each recording."}</p>
+      </div>
 
       <div className="history-summary-strip">
         <div><span className="mono">RECORDINGS</span><strong>{results.length}</strong></div>
@@ -158,7 +163,7 @@ export default function History() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--hair)" }}>
-                {[t("colDate"), t("colTask"), t("colFrequency"), t("colAmplitude"), t("colNotes")].map((h) => (
+                {[t("colDate"), t("colTask"), ...(mode === "clinician" ? ["Quality"] : []), t("colFrequency"), t("colAmplitude"), mode === "clinician" ? "Review flag" : t("colNotes")].map((h) => (
                   <th key={h} className="mono" style={{ textAlign: "left", padding: "10px 16px" }}>
                     {h}
                   </th>
@@ -175,6 +180,11 @@ export default function History() {
                       {t(TASK_FILTERS.find((f) => f.key === r.task)?.labelKey) || r.task}
                     </span>
                   </td>
+                  {mode === "clinician" && (
+                    <td style={{ padding: "12px 16px" }}>
+                      <span className={`quality-table-pill ${r.qualityOk === false ? "quality-review" : "quality-pass"}`}>{r.qualityOk === false ? "Review" : "Pass"}</span>
+                    </td>
+                  )}
                   <td className="data" style={{ padding: "12px 16px" }}>
                     {r.frequencyHz ? `${r.frequencyHz.toFixed(2)} Hz` : "—"}
                   </td>
@@ -182,7 +192,7 @@ export default function History() {
                     {r.rmsAmplitude != null ? r.rmsAmplitude.toFixed(4) : "—"}
                   </td>
                   <td className="data-sm" style={{ padding: "12px 16px", color: "var(--ink-soft)" }}>
-                    {r.tapDecrementPct ? `decrement ${r.tapDecrementPct.toFixed(0)}%` : r.spiralDeviationScore != null ? `deviation ${(r.spiralDeviationScore * 100).toFixed(0)}%` : "—"}
+                    {mode === "clinician" ? (r.rating || r.patternLabel || "—") : r.tapDecrementPct ? `decrement ${r.tapDecrementPct.toFixed(0)}%` : r.spiralDeviationScore != null ? `deviation ${(r.spiralDeviationScore * 100).toFixed(0)}%` : "—"}
                   </td>
                 </tr>
               ))}

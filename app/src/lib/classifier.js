@@ -173,6 +173,7 @@ function classifyWithModel(clf, context) {
     modelSignal: out.label, // 'steady' | 'tremor_like'
     pTremor: out.probs.tremor_like ?? 0,
     confidence: out.confidence,
+    contributions: out.contributions,
     version: model.version,
     metrics: model.metrics || null,
   };
@@ -386,6 +387,7 @@ export function classifyPattern(clf, featureVector, context = {}) {
         agrees: ruleReassuring === modelReassuring,
         version: m.version,
         metrics: m.metrics,
+        contributions: m.contributions,
       };
     }
   }

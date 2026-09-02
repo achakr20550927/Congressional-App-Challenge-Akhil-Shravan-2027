@@ -29,9 +29,9 @@ Trains the small on-device classifiers shipped in `app/public/models/`.
 
 ## Current validation and limits
 
-The PADS cross-check reaches a subject-level ROC AUC of 0.733. Participants
-never cross validation folds. It uses only sensor-transferable frequency-shape
-features and is deliberately not treated as a diagnosis or as the primary
+The PADS cross-check reaches a subject-level ROC AUC of 0.744. Participants
+never cross validation folds. It uses sensor-transferable frequency-shape and
+organized-rhythm features and is deliberately not treated as a diagnosis or as the primary
 webcam decision path: PADS was captured with smartwatches, not this camera
 protocol. A prospective, consented, clinician-labeled webcam dataset is still
 required for clinical validation.

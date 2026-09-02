@@ -81,7 +81,7 @@ export class CameraError extends Error {
  * @param {MediaStreamConstraints} constraints
  * @returns {Promise<MediaStream>}
  */
-export async function startCameraStream(constraints = { video: { width: 640, height: 480 }, audio: false }) {
+export async function startCameraStream(constraints = { video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" }, audio: false }) {
   if (!navigator.mediaDevices?.getUserMedia) {
     throw new CameraError("unsupported", "Camera access is not supported in this browser.");
   }
