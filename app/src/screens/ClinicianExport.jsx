@@ -10,13 +10,16 @@ export default function ClinicianExport() {
   const [note, setNote] = useState("");
   const [status, setStatus] = useState("selecting"); // selecting | generating | ready
   const [blob, setBlob] = useState(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     getSessionHistory().then((r) => {
       setResults(r);
       setSelected(new Set(r.map((x) => x.sessionId)));
-    });
+    }).catch(() => { setError('Could not open your local journal.'); setResults([]); });
   }, []);
+
+  useEffect(() => { setBlob(null); setStatus('selecting'); }, [selected, note]);
 
   const sessionGroups = useMemo(() => {
     if (!results) return [];
@@ -39,9 +42,12 @@ export default function ClinicianExport() {
 
   async function generate() {
     setStatus("generating");
+    setError('');
+    try {
     const pdfBlob = await exportPdfReport([...selected], note.trim() || undefined);
     setBlob(pdfBlob);
     setStatus("ready");
+    } catch { setError('Report generation failed. Please try again.'); setStatus('selecting'); }
   }
 
   function download() {
@@ -53,15 +59,17 @@ export default function ClinicianExport() {
   return (
     <div className="wrap export-page">
       <header className="app-page-header">
-        <span className="eyebrow mono">Portable clinical summary</span>
+        <span className="eyebrow mono">Your measurements, ready to share</span>
         <h1>{t("clinicianExportTitle")}</h1>
         <p>{t("clinicianExportBody")}</p>
       </header>
 
       <div className="card stack export-session-list">
+        {error && <p role="alert">{error}</p>}
+        {!sessionGroups.length && <p>No recordings yet. Complete a check-in to create a report.</p>}
         {sessionGroups.map(([sessionId, group]) => (
           <label key={sessionId} className="checkbox-row" style={{ cursor: "pointer" }}>
-            <input type="checkbox" checked={selected.has(sessionId)} onChange={() => toggle(sessionId)} />
+            <input type="checkbox" disabled={status === 'generating'} checked={selected.has(sessionId)} onChange={() => toggle(sessionId)} />
             <span>
               {new Date(group[0].recordedAt).toLocaleString()} — {group.length} task{group.length > 1 ? "s" : ""}
             </span>
@@ -71,7 +79,7 @@ export default function ClinicianExport() {
 
       <div className="field">
         <label htmlFor="note">{t("recipientNoteLabel")}</label>
-        <input id="note" type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("recipientNotePlaceholder")} />
+        <input id="note" type="text" maxLength={500} disabled={status === 'generating'} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("recipientNotePlaceholder")} />
       </div>
 
       {status !== "ready" && (

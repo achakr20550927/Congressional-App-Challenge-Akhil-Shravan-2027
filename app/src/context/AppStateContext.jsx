@@ -92,8 +92,8 @@ export function AppStateProvider({ children }) {
   }, []);
 
   const clearAllData = useCallback(async () => {
-    Object.values(STORAGE_KEYS).forEach((k) => localStorage.removeItem(k));
     await clearAllLocalData();
+    Object.values(STORAGE_KEYS).forEach((k) => localStorage.removeItem(k));
     setConsentState(null);
     setProfileState(null);
     setDeviceState(null);

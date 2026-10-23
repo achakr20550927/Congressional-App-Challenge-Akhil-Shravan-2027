@@ -7,7 +7,6 @@
 // JointFrame data is never persisted here; it exists only in memory during a
 // recording (PRD §8).
 import { openDB } from "idb";
-import jsPDF from "jspdf";
 
 const DB_NAME = "neuratrack";
 const DB_VERSION = 1;
@@ -74,6 +73,21 @@ export async function saveTaskResult(result, sessionId) {
   await tx.objectStore("results").put(record);
   await tx.done;
   return record;
+}
+
+export async function getResult(id) {
+  const db = await dbPromise();
+  return db.get('results', id);
+}
+
+export async function updateResultNotes(id, notes) {
+  if (typeof notes !== 'string' || notes.length > 2000) throw new Error('Notes must be at most 2,000 characters.');
+  const db = await dbPromise();
+  const tx = db.transaction('results', 'readwrite');
+  const record = await tx.store.get(id);
+  if (!record) throw new Error('Recording not found.');
+  await tx.store.put({...record, notes});
+  await tx.done;
 }
 
 /**
@@ -147,8 +161,9 @@ const TASK_LABELS = {
 };
 
 function csvEscape(v) {
-  const s = String(v ?? "");
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  let s = String(v ?? "");
+  if (typeof v === 'string' && /^[\s]*[=+@-]/.test(s)) s = "'" + s;
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 /**
@@ -158,7 +173,7 @@ function csvEscape(v) {
 export async function exportCsv(resultIds) {
   const db = await dbPromise();
   let results = await db.getAll("results");
-  if (resultIds && resultIds.length) {
+  if (resultIds) {
     const idSet = new Set(resultIds);
     results = results.filter((r) => idSet.has(r.id));
   }
@@ -171,10 +186,11 @@ export async function exportCsv(resultIds) {
     "rmsAmplitude",
     "tapRateHz",
     "tapDecrementPct",
+    "tapCount", "meanDeviationPctRadius", "spiralTurns",
     "spiralDeviationScore",
     "asymmetryIndex",
     "patternLabel",
-    "confidence",
+    "qualityOk", "protocolVersion", "hand", "inputType", "units", "notes",
   ];
   const lines = [headers.join(",")];
   for (const r of results) {
@@ -190,92 +206,10 @@ export async function exportCsv(resultIds) {
  * @param {string} [recipientNote]
  */
 export async function exportPdfReport(sessionIds, recipientNote) {
-  const db = await dbPromise();
-  let sessions = await db.getAll("sessions");
-  let results = await db.getAll("results");
-  if (sessionIds && sessionIds.length) {
-    const idSet = new Set(sessionIds);
-    sessions = sessions.filter((s) => idSet.has(s.id));
-    results = results.filter((r) => idSet.has(r.sessionId));
-  }
-  sessions.sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
-
-  const doc = new jsPDF({ unit: "pt", format: "letter" });
-  const margin = 48;
-  const pageWidth = doc.internal.pageSize.getWidth();
-  let y = margin;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.setTextColor(27, 36, 32);
-  doc.text("NeuraTrack — Session Summary", margin, y);
-  y += 20;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(85, 80, 74);
-  doc.text(`Generated ${new Date().toLocaleString()}`, margin, y);
-  y += 14;
-  if (recipientNote) {
-    doc.text(`Note: ${recipientNote}`, margin, y);
-    y += 14;
-  }
-
-  y += 6;
-  doc.setDrawColor(218, 210, 194);
-  doc.line(margin, y, pageWidth - margin, y);
-  y += 10;
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "italic");
-  doc.text(
-    "NeuraTrack is a monitoring tool, not a diagnostic device. It does not diagnose a condition or name a disease.",
-    margin,
-    y,
-    { maxWidth: pageWidth - margin * 2 }
-  );
-  y += 24;
-
-  const colX = [margin, margin + 90, margin + 210, margin + 300, margin + 390, margin + 470];
-  const drawTableHeader = () => {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(85, 80, 74);
-    ["Date", "Task", "Frequency", "Amplitude", "Asymmetry", "Pattern"].forEach((h, i) =>
-      doc.text(h.toUpperCase(), colX[i], y)
-    );
-    y += 6;
-    doc.setDrawColor(218, 210, 194);
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 14;
-  };
-
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(27, 36, 32);
-  drawTableHeader();
-
-  for (const s of sessions) {
-    const sessionResults = results
-      .filter((r) => r.sessionId === s.id)
-      .sort((a, b) => new Date(a.recordedAt) - new Date(b.recordedAt));
-
-    for (const r of sessionResults) {
-      if (y > 720) {
-        doc.addPage();
-        y = margin;
-        drawTableHeader();
-      }
-      doc.setFontSize(9);
-      doc.text(new Date(r.recordedAt).toLocaleDateString(), colX[0], y);
-      doc.text(TASK_LABELS[r.task] || r.task, colX[1], y);
-      doc.text(r.frequencyHz ? `${r.frequencyHz.toFixed(2)} Hz` : "—", colX[2], y);
-      doc.text(r.rmsAmplitude != null ? r.rmsAmplitude.toFixed(4) : "—", colX[3], y);
-      doc.text(r.asymmetryIndex != null ? `${(r.asymmetryIndex * 100).toFixed(0)}%` : "—", colX[4], y);
-      doc.text(r.patternLabel || "—", colX[5], y, { maxWidth: pageWidth - margin - colX[5] });
-      y += 16;
-    }
-  }
-
-  return doc.output("blob");
+  const results = await getSessionHistory();
+  const selected = sessionIds ? new Set(sessionIds) : null;
+  const { createReport } = await import('./report.js');
+  return createReport(results.filter(r => !selected || selected.has(r.sessionId)).reverse(), recipientNote);
 }
 
 /** Triggers a browser download for a Blob without any server round-trip. */
@@ -293,6 +227,7 @@ export function downloadBlob(blob, filename) {
 /** Clears all local session/result data. Called from Settings' destructive "Clear all local data". */
 export async function clearAllLocalData() {
   const db = await dbPromise();
-  await db.clear("sessions");
-  await db.clear("results");
+  const tx = db.transaction(['sessions', 'results'], 'readwrite');
+  await Promise.all([tx.objectStore('sessions').clear(), tx.objectStore('results').clear()]);
+  await tx.done;
 }

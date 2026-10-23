@@ -12,7 +12,7 @@
  */
 export function fftInPlace(re, im) {
   const n = re.length;
-  if (n & (n - 1)) throw new Error("fftInPlace: length must be a power of 2, got " + n);
+  if (!n || n !== im.length || (n & (n - 1))) throw new Error("fftInPlace: equal, nonempty power-of-two arrays required");
   if (n <= 1) return;
 
   for (let i = 1, j = 0; i < n; i++) {
@@ -92,6 +92,7 @@ function hann(n) {
  * @param {number} maxHz
  */
 export function analyzeTremor(samples, sampleRateHz, minHz = 2, maxHz = 15) {
+  if (!Number.isFinite(sampleRateHz) || sampleRateHz <= 0 || !samples.every(Number.isFinite)) throw new Error("Invalid signal or sample rate");
   const n = samples.length;
   if (n < 4) return { frequency: 0, magnitude: 0, rmsAmplitude: 0, spectrum: [], peakProminence: 0 };
 
@@ -100,6 +101,7 @@ export function analyzeTremor(samples, sampleRateHz, minHz = 2, maxHz = 15) {
   let rmsSum = 0;
   for (const v of detrended) rmsSum += v * v;
   const rmsAmplitude = Math.sqrt(rmsSum / n);
+  if (rmsAmplitude < 1e-10) return { frequency: 0, magnitude: 0, rmsAmplitude: 0, spectrum: [], peakProminence: 0, tremorBandPowerRatio: 0 };
 
   const nfft = nextPow2(n);
   const win = hann(n);
@@ -231,12 +233,15 @@ export function analyzeTapDecrement(distanceSeries, sampleRateHz) {
  * @returns {number[]} values on a uniform grid spanning [samples[0].t, samples[last].t]
  */
 export function resampleToUniformGrid(samples, targetHz) {
+  if (!Number.isFinite(targetHz) || targetHz <= 0 || targetHz > 1000) throw new Error("Invalid resampling rate");
+  if (samples?.some((s, i) => !Number.isFinite(s.t) || !Number.isFinite(s.value) || (i > 0 && s.t <= samples[i - 1].t))) throw new Error("Samples must be finite with strictly increasing timestamps");
   if (!samples || samples.length < 2) return samples ? samples.map((s) => s.value) : [];
   const t0 = samples[0].t;
   const t1 = samples[samples.length - 1].t;
   const durationSec = (t1 - t0) / 1000;
   const stepMs = 1000 / targetHz;
   const count = Math.max(2, Math.floor((durationSec * 1000) / stepMs) + 1);
+  if (count > 1000000) throw new Error("Signal duration exceeds processing limit");
 
   const out = new Array(count);
   let srcIdx = 0;

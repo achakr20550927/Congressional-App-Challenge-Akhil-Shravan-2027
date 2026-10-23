@@ -25,7 +25,7 @@ export default function ProfileSetup() {
     e.preventDefault();
     if (!name.trim()) return;
     saveProfile({ name: name.trim(), condition, language: lang });
-    navigate("/calibrate");
+    navigate("/app");
   }
 
   return (
@@ -40,6 +40,7 @@ export default function ProfileSetup() {
             onChange={(e) => setName(e.target.value)}
             placeholder={t("profileNamePlaceholder")}
             required
+            maxLength={60}
             autoFocus
           />
         </div>
@@ -60,6 +61,7 @@ export default function ProfileSetup() {
 
         <div className="field">
           <label htmlFor="language">{t("profileLanguageLabel")}</label>
+          <p className="data-sm">Onboarding supports English and Spanish. The new measurement workspace is currently in English.</p>
           <select id="language" value={lang} onChange={(e) => setLang(e.target.value)}>
             {languages.map((l) => (
               <option key={l.code} value={l.code}>

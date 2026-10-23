@@ -163,7 +163,7 @@ const FEATURE_NAME_TO_KEY = {
  */
 function classifyWithModel(clf, context) {
   const model = clf?.model;
-  if (!model) return null;
+  if (!model || model.webcamValidated !== true) return null;
   const { task = "rest", peakProminence = 0, result, quality } = context;
   if (!model.tasksCovered?.includes(task)) return null;
 

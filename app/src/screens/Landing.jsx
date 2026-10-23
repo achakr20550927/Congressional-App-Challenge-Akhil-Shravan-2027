@@ -22,20 +22,20 @@ export default function Landing() {
 
       <main>
         <section id="top" className="landing-hero landing-shell">
-          <motion.div className="landing-hero-copy" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .65 }}>
+          <motion.div className="landing-hero-copy" initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: .65 }}>
             <span className="landing-kicker"><i /> Private, camera-only movement tracking</span>
             <h1>See movement<br /><em>more clearly.</em></h1>
-            <p>{t("heroLede")}</p>
+            <p>A private movement journal for your camera and touchscreen. Record short guided check-ins, explore the signal, and bring clearer context to your next conversation with a clinician.</p>
             <div className="landing-actions"><button className="btn landing-primary" onClick={() => navigate("/consent")}>{t("ctaTryNow")}</button><a className="landing-text-link" href="#how">Explore the assessment <span>↘</span></a></div>
             <div className="landing-assurances" aria-label="Product assurances"><span>No account</span><span>Nothing uploaded</span><span>Works in your browser</span></div>
           </motion.div>
 
-          <motion.div className="landing-visual" initial={{ opacity: 0, scale: .98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: .8, delay: .1 }}>
+          <motion.div className="landing-visual" initial={false} animate={{ opacity: 1, scale: 1 }} transition={{ duration: .8, delay: .1 }}>
             <video className="landing-video-blur" src="/media/dna.mp4" muted playsInline autoPlay loop aria-hidden="true" />
             <video className="landing-video" src="/media/dna.mp4" muted playsInline autoPlay loop aria-label="Abstract DNA strand animation" />
             <div className="landing-visual-shade" />
             <div className="landing-live-card"><span className="landing-live-dot" /><div><small>ON-DEVICE ANALYSIS</small><strong>Video never leaves your browser</strong></div></div>
-            <div className="landing-signal-card"><span>Signal quality</span><strong>Ready</strong><svg viewBox="0 0 180 36" aria-hidden="true"><path d="M2 23 C14 22 18 10 29 19 S48 27 59 15 S75 8 87 21 S105 28 116 14 S135 10 145 20 S162 25 178 12" /></svg></div>
+            <div className="landing-signal-card"><span>Interface preview</span><strong>Illustration</strong><svg viewBox="0 0 180 36" aria-hidden="true"><path d="M2 23 C14 22 18 10 29 19 S48 27 59 15 S75 8 87 21 S105 28 116 14 S135 10 145 20 S162 25 178 12" /></svg></div>
           </motion.div>
         </section>
 
@@ -52,10 +52,10 @@ export default function Landing() {
         </div></section>
 
         <section id="analysis" className="landing-section landing-shell landing-analysis">
-          <div className="landing-analysis-copy"><span className="landing-kicker">Results that explain themselves</span><h2>See the signal,<br />not a mystery score.</h2><p>Every result separates recording quality from the movement itself, then shows which measurements shaped the explanation.</p><ul><li>Spatial motion heatmap and trace</li><li>Frequency spectrum with the dominant band highlighted</li><li>Left–right comparison when both hands are visible</li><li>Plain-language next steps and model limitations</li></ul></div>
+          <div className="landing-analysis-copy"><span className="landing-kicker">Results that explain themselves</span><h2>See the signal,<br />not a mystery score.</h2><p>Every result separates recording quality from the movement itself, then shows which measurements shaped the explanation.</p><ul><li>Spatial motion heatmap and trace</li><li>Frequency spectrum with the dominant band highlighted</li><li>Separate recordings for each hand</li><li>Plain-language next steps and model limitations</li></ul><button className="btn landing-primary" onClick={()=>navigate('/demo')}>Explore a sample result →</button></div>
           <div className="landing-analysis-ui" aria-label="Example analysis dashboard">
-            <div className="analysis-ui-head"><div><small>REST TREMOR · EXAMPLE</small><strong>Movement stayed within your recent range</strong></div><span>Good capture</span></div>
-            <div className="analysis-ui-grid"><div className="analysis-map"><span>Motion map</span><div className="heat heat-a" /><div className="heat heat-b" /><svg viewBox="0 0 300 180"><path d="M33 126 C72 104 72 49 116 70 S163 145 202 101 S240 41 270 64" /></svg></div><div className="analysis-metrics"><div><small>Dominant rhythm</small><strong>4.8 <i>Hz</i></strong></div><div><small>Signal clarity</small><strong>82 <i>%</i></strong></div><div><small>Asymmetry</small><strong>Low</strong></div></div><div className="analysis-spectrum"><span>Frequency structure</span><div className="bars">{[22,34,26,48,82,66,41,28,19,14,11,8].map((h,i)=><i key={i} style={{height:`${h}%`}} />)}</div><div className="axis"><span>2 Hz</span><span>8 Hz</span><span>15 Hz</span></div></div></div>
+            <div className="analysis-ui-head"><div><small>REST TREMOR · EXAMPLE</small><strong>Illustrative signal · not patient data</strong></div><span>Good capture</span></div>
+            <div className="analysis-ui-grid"><div className="analysis-map"><span>Motion map</span><div className="heat heat-a" /><div className="heat heat-b" /><svg viewBox="0 0 300 180"><path d="M33 126 C72 104 72 49 116 70 S163 145 202 101 S240 41 270 64" /></svg></div><div className="analysis-metrics"><div><small>Dominant rhythm</small><strong>4.8 <i>Hz</i></strong></div><div><small>Tracking rate</small><strong>30 <i>fps</i></strong></div><div><small>Selected hand</small><strong>Right</strong></div></div><div className="analysis-spectrum"><span>Frequency structure</span><div className="bars">{[22,34,26,48,82,66,41,28,19,14,11,8].map((h,i)=><i key={i} style={{height:`${h}%`}} />)}</div><div className="axis"><span>2 Hz</span><span>8 Hz</span><span>15 Hz</span></div></div></div>
           </div>
         </section>
 

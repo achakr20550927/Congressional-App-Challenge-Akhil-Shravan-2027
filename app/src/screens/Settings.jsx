@@ -23,8 +23,8 @@ export default function Settings() {
   }
 
   async function handleClearData() {
-    await clearAllData();
-    navigate("/");
+    try { await clearAllData(); navigate("/"); }
+    catch { showToast('Data could not be cleared. Please retry.'); }
   }
 
   return (
@@ -39,10 +39,11 @@ export default function Settings() {
       <Section title={t("settingsProfile")}>
         <div className="field">
           <label htmlFor="name">{t("settingsDisplayName")}</label>
-          <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} onBlur={handleNameBlur} />
+          <input id="name" type="text" maxLength="60" value={name} onChange={(e) => setName(e.target.value)} onBlur={handleNameBlur} />
         </div>
         <div className="field" style={{ marginBottom: 0 }}>
           <label htmlFor="lang">{t("settingsLanguage")}</label>
+          <p className="data-sm">Onboarding and legacy settings are translated. The new workspace is currently in English.</p>
           <select id="lang" value={profile?.language || "en"} onChange={(e) => handleLanguageChange(e.target.value)}>
             {languages.map((l) => (
               <option key={l.code} value={l.code}>
@@ -63,13 +64,12 @@ export default function Settings() {
         />
       </Section>
 
-      <AccessibilityShowcase t={t} />
-
-      <Section title={t("settingsCamera")}>
-        <button className="btn btn-ghost" style={{ width: "100%" }} onClick={() => navigate("/calibrate")}>
-          {t("settingsRecalibrate")}
-        </button>
+      <Section title="Install on your phone">
+        <p>Open NeuraTrack in your phone’s browser, then choose Add to Home Screen. On iPhone, use Safari’s Share menu. On supported Android browsers, use the install option.</p>
+        <p className="data-sm">Saved journal screens work offline after the first production load. Camera setup needs a connection to download the tracking runtime and model.</p>
       </Section>
+
+      <Section title="Camera & measurement protocol"><p>Hand scale is estimated within each recording. No separate calibration is required. For reliable comparisons, use the same camera, hand, lighting, and distance each time.</p></Section>
 
       <Section title={t("settingsData")}>
         {!confirmingClear && (

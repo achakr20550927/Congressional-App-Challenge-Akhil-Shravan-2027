@@ -1,95 +1,46 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAppState } from "../context/AppStateContext.jsx";
-import { getSessionHistory } from "../lib/storage.js";
-import TaskIcon from "../components/TaskIcon.jsx";
-import { Stagger, StaggerItem } from "../components/motion/primitives.jsx";
-import SignalLattice from "../components/SignalLattice.jsx";
-
-const TASKS = [
-  { key: "rest", titleKey: "taskRestTitle", descKey: "taskRestDesc", duration: "10 sec" },
-  { key: "postural", titleKey: "taskPosturalTitle", descKey: "taskPosturalDesc", duration: "10 sec" },
-  { key: "tap", titleKey: "taskTapTitle", descKey: "taskTapDesc", duration: "10 sec" },
-  { key: "pronation", titleKey: "taskPronationTitle", descKey: "taskPronationDesc", duration: "10 sec" },
-  { key: "spiral", titleKey: "taskSpiralTitle", descKey: "taskSpiralDesc", duration: "≤30 sec" },
-];
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAppState } from '../context/AppStateContext.jsx';
+import { getSessionHistory } from '../lib/storage.js';
+import { TASKS, taskInfo } from '../lib/measurements.js';
+import AppIcon from '../components/AppIcon.jsx';
+import TaskIcon from '../components/TaskIcon.jsx';
+import { LinePlot } from '../components/EvidenceCharts.jsx';
 
 export default function Dashboard() {
-  const { t, profile, mode } = useAppState();
-  const navigate = useNavigate();
-  const [lastResult, setLastResult] = useState(null);
-  const [history, setHistory] = useState([]);
-
-  useEffect(() => {
-    getSessionHistory().then((results) => {
-      setHistory(results);
-      if (results.length) setLastResult(results[results.length - 1]);
-    });
-  }, []);
-
-  return (
-    <div className="wrap dashboard-page">
-      <section className="dashboard-hero">
-        <div className="dashboard-orb" aria-hidden="true" />
-        <SignalLattice compact className="dashboard-lattice" />
-        <div>
-          <span className="eyebrow mono">{mode === "clinician" ? "Clinical review workspace" : profile?.name ? `Welcome back, ${profile.name}` : "Your private workspace"}</span>
-          <h1>{mode === "clinician" ? "Assessment overview" : t("dashboardTitle")}</h1>
-          <p>{mode === "clinician" ? "Review recording quality, recent findings, and task coverage before a supervised assessment." : t("dashboardLede")}</p>
-        </div>
-        <Link to="/history" className="btn btn-ghost">
-          {t("viewHistory")}
-        </Link>
+  const {profile,mode}=useAppState();
+  const [history,setHistory]=useState([]),[error,setError]=useState(''),[loading,setLoading]=useState(true);
+  useEffect(()=>{let live=true; getSessionHistory().then(r=>live&&setHistory(r)).catch(()=>live&&setError('Your journal could not be opened. Check browser storage permissions.')).finally(()=>live&&setLoading(false));return()=>{live=false;};},[]);
+  const usable=history.filter(r=>r.qualityOk===true&&r.protocolVersion);
+  const recent=history.slice(-3).reverse();
+  const coverage=new Set(usable.map(r=>r.task));
+  const recentRest=usable.filter(r=>r.task==='rest'&&r.hand==='Right'&&r.protocolVersion==='camera-v3').slice(-12);
+  const greeting=mode==='clinician'?'Every recording has a story.':profile?.name?`A moment for you, ${profile.name.split(' ')[0]}.`:'A moment for you.';
+  const start=TASKS.find(t=>!coverage.has(t.key))||TASKS[0];
+  return <div className="workspace-page">
+    <header className="page-heading"><div><span className="overline">{mode==='clinician'?'REVIEW WORKSPACE':'YOUR MOVEMENT JOURNAL'}</span><h1>{greeting}</h1><p>{mode==='clinician'?'Inspect quality first. Then compare measurements, add context, and prepare a report.':'Small check-ins. A clearer picture of your movement over time.'}</p></div><span className="date-label">{new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',weekday:'short'}).format(new Date())}</span></header>
+    {error&&<p role="alert" className="notice warning">{error}</p>}
+    <div className="overview-grid">
+      <section className="start-card">
+        <div className="start-card-top"><span className="pill">YOUR NEXT CHECK-IN</span><AppIcon name="hand" size={28}/></div>
+        <h2>A little time.<br/>More understanding.</h2><p>Choose a guided task. See what was measured.<br className="desktop-only"/> Keep the context that numbers can't capture.</p>
+        <div className="start-actions"><Link className="btn btn-primary" to={`/capture/${start.key}`}>Start a check-in <AppIcon name="arrow"/></Link><Link className="quiet-link" to="/demo">Explore a sample</Link></div>
+        <div className="start-meta"><span><AppIcon name="camera" size={15}/> Camera or touch</span><span><AppIcon name="shield" size={15}/> Nothing uploaded</span></div>
+        <div className="decorative-grid" aria-hidden="true">{Array.from({length:84},(_,i)=><i key={i} style={{opacity:.1+((i*7)%11)/14}}/>)}</div>
       </section>
-
-      <section className={`mode-purpose mode-purpose-${mode}`} aria-label={`${mode} view explanation`}>
-        <span className="mono">{mode === "clinician" ? "CLINICIAN VIEW" : "PATIENT VIEW"}</span>
-        <p>{mode === "clinician" ? "Supervised capture, recording quality, raw signal evidence, model cross-checks, and export tools." : "Guided self-checks, plain-language feedback, and clear guidance on when a repeated pattern may be worth discussing."}</p>
-        {mode === "clinician" && <Link to="/export" className="mode-purpose-link">Create review report →</Link>}
+      <section className="baseline-card"><div className="panel-heading"><h3>Your starting picture</h3><span className="tiny-tag">TASK COVERAGE</span></div>
+        <div className="coverage-display"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="49" fill="none" stroke="#243b40" strokeWidth="7"/><circle cx="60" cy="60" r="49" fill="none" stroke="#a7dfc9" strokeWidth="7" strokeDasharray={`${coverage.size/5*308} 308`} strokeLinecap="round" transform="rotate(-90 60 60)"/></svg><strong>{coverage.size}<small>/ 5</small></strong></div>
+        <h3>{coverage.size===5?'All five tasks explored':'Build a personal reference'}</h3><p>{coverage.size===5?'Keep the same setup for future comparisons.':'Try each task to learn what the app measures. Go at your own pace.'}</p><span className="subtle-caption">Task completion, not a health score</span>
       </section>
-
-      {mode === "clinician" && (
-        <section className="clinician-overview" aria-label="Clinical session summary">
-          <div><span className="mono">RECORDINGS</span><strong>{history.length}</strong><p>Stored on this device</p></div>
-          <div><span className="mono">TASK COVERAGE</span><strong>{new Set(history.map((item) => item.task)).size}/5</strong><p>Distinct assessments</p></div>
-          <div><span className="mono">QUALITY PASS</span><strong>{history.length ? `${Math.round(history.filter((item) => item.qualityOk !== false).length / history.length * 100)}%` : "—"}</strong><p>Usable recordings</p></div>
-          <div><span className="mono">LATEST STATUS</span><strong className="clinician-status">{lastResult?.rating || "No data"}</strong><p>{lastResult ? new Date(lastResult.recordedAt).toLocaleDateString() : "Run an assessment"}</p></div>
-        </section>
-      )}
-
-      {lastResult && (
-        <div className="last-session">
-          <span className="mono">{t("lastSession")}</span>
-          <strong>{TASKS.find((tk) => tk.key === lastResult.task)?.titleKey ? t(TASKS.find((tk) => tk.key === lastResult.task).titleKey) : lastResult.task}</strong>
-          {lastResult.frequencyHz ? <span className="data">{lastResult.frequencyHz.toFixed(2)} Hz</span> : null}
-          <span className="data-sm">
-            {new Date(lastResult.recordedAt).toLocaleDateString()}
-          </span>
-        </div>
-      )}
-
-      <div className="section-heading">
-        <div><span className="eyebrow mono">{mode === "clinician" ? "Supervised capture" : "Check in"}</span><h2>{mode === "clinician" ? "Start an assessment" : "Choose an assessment"}</h2></div>
-        <p>{mode === "clinician" ? "Use the standardized task instructions and review quality before interpreting a result." : "Each check-in takes about a minute. Your video stays on this device."}</p>
-      </div>
-      <Stagger className="task-grid" gap={0.06}>
-        {TASKS.map((task, index) => (
-          <StaggerItem key={task.key}>
-            <button
-              className="task-tile"
-              onClick={() => navigate(`/capture/${task.key}`)}
-            >
-              <div className="task-tile-meta"><span className="mono">0{index + 1}</span><span>{task.duration}</span></div>
-              <span className="task-icon-shell"><TaskIcon task={task.key} /></span>
-              <h3>{t(task.titleKey)}</h3>
-              <p>
-                {t(task.descKey)}
-              </p>
-              <span className="task-launch" aria-hidden="true">Begin <b>↗</b></span>
-            </button>
-          </StaggerItem>
-        ))}
-      </Stagger>
     </div>
-  );
+    <div className="summary-strip"><div><span>RECORDINGS</span><strong>{loading?'—':history.length}</strong><small>On this device</small></div><div><span>QUALITY CHECKED</span><strong>{loading?'—':usable.length}</strong><small>Current-protocol recordings</small></div><div><span>YOUR DATA</span><strong>Local only <AppIcon name="shield" size={19}/></strong><small>No account or upload required</small></div></div>
+    <div className="section-title"><div><span className="overline">FIVE WAYS TO CHECK IN</span><h2>Meet your movement.</h2></div><p>10–30 seconds per task</p></div>
+    <div className="assessment-grid">{TASKS.map((task,i)=><Link to={`/capture/${task.key}`} className="assessment-card" key={task.key}><div className="assessment-card-head"><span className="task-icon-shell"><TaskIcon task={task.key}/></span><span className="task-duration">{task.duration}s {coverage.has(task.key)&&<AppIcon name="check" size={14}/>}</span></div><h3>{task.title}</h3><p>{task.subtitle}</p><div className="assessment-card-foot"><span>{task.key==='pronation'?'Experimental':task.key==='spiral'?'Touch or mouse':'Camera-guided'}</span><AppIcon name="arrow" size={18}/></div></Link>)}</div>
+    <div className="journal-preview-grid">
+      <section className="panel journal-preview"><div className="panel-heading"><h3>Recent check-ins</h3><Link to="/history">Open journal <AppIcon name="arrow" size={16}/></Link></div>{!recent.length?<div className="empty-inline"><AppIcon name="history" size={32}/><h3>Your story starts here.</h3><p>Completed check-ins will appear here. No sample data is added to your journal.</p></div>:recent.map(r=><Link className="recording-row" to={`/results/${r.id}`} key={r.id}><span className="recording-icon"><TaskIcon task={r.task}/></span><div><strong>{taskInfo(r.task)?.title||r.task}</strong><small>{new Date(r.recordedAt).toLocaleString()} · {r.hand||r.inputType||'Legacy protocol'}</small></div><span className={`status-label ${r.qualityOk===false?'status-retry':''}`}>{r.qualityOk===false?'Retry':r.protocolVersion?'Recorded':'Legacy'}</span><AppIcon name="arrow" size={16}/></Link>)}</section>
+      <section className="panel"><div className="panel-heading"><h3>Resting-hand amplitude</h3><span>RIGHT HAND</span></div>{recentRest.length>=2?<LinePlot points={recentRest.map((r,i)=>({x:i+1,y:r.rmsAmplitude*100}))} xLabel="Recording number" yLabel="% of projected palm length"/>:<div className="empty-inline"><div className="empty-bars" aria-hidden="true">{[28,44,34,58,46,64,52,70,56].map((h,i)=><i key={i} style={{height:h}}/>)}</div><h3>A trend takes more than one moment.</h3><p>Two quality-checked right-hand rest recordings unlock this chart. Same setup. Same task.</p></div>}<p className="subtle-caption">Amplitude is not disease severity. Compare only similar recording conditions.</p></section>
+    </div>
+    <Link className="research-banner" to="/evidence"><span className="research-icon"><AppIcon name="science" size={25}/></span><div><strong>Good science shows its work.</strong><p>See the training data, validation results, and what this app cannot tell you.</p></div><AppIcon name="arrow"/></Link>
+    {mode==='clinician'&&<p className="notice">Review view adds quality filters, technical measurements, and report tools. It is not a clinician login or a multi-patient record system.</p>}
+  </div>;
 }

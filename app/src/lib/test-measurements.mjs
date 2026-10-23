@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { analyzeRecording, recordingQuality, measureTaps, selectHand, analyzeDrawing } from './measurements.js';
+import { generateIdealSpiral, analyzeTremor, resampleToUniformGrid } from './signal.js';
+const samples=Array.from({length:300},(_,i)=>({t:i/30*1000,x:.5+.004*Math.sin(2*Math.PI*5*i/30),y:.4,scale:.2,tapDistance:.1,orientation:0}));
+test('5 Hz recovery with observed timing',()=>{const r=analyzeRecording({samples,totalFrames:300,task:'rest'});assert.equal(r.qualityOk,true);assert.ok(Math.abs(r.frequencyHz-5)<.1);});
+test('tracking gaps withhold interpretation',()=>{const r=analyzeRecording({samples:samples.filter(s=>s.t<3000||s.t>4000),totalFrames:300,task:'rest'});assert.equal(r.qualityOk,false);assert.equal(r.frequencyHz,undefined);});
+test('low FPS rejected, not upsampled into confidence',()=>assert.equal(recordingQuality(samples.filter((_,i)=>i%2===0),150).qualityOk,false));
+test('zero motion has no invented frequency',()=>assert.equal(analyzeTremor(Array(300).fill(1),30).frequency,0));
+test('invalid resampling rate rejected',()=>assert.throws(()=>resampleToUniformGrid([{t:0,value:1},{t:1,value:2}],0)));
+test('hand selection survives reordered detections',()=>{const points=Array.from({length:21},()=>({x:.5,y:.5}));const r={landmarks:[points,points],handednesses:[[{categoryName:'Left',score:.9}],[{categoryName:'Right',score:.9}]]};assert.equal(selectHand(r,'Right').points,points);assert.equal(selectHand({...r,handednesses:[[{categoryName:'Right',score:.3}]]},'Right'),null);});
+test('tap hysteresis recovers 2 Hz',()=>{const v=Array.from({length:300},(_,i)=>.3+.2*Math.cos(2*Math.PI*2*i/30));const r=measureTaps(v,30);assert.ok(r.tapCount>=19&&r.tapCount<=20);assert.ok(Math.abs(r.tapDecrementPct)<2);});
+test('incomplete spiral is not rated as successful',()=>{const g=generateIdealSpiral({turns:4,growth:6});assert.equal(analyzeDrawing(g.slice(0,20).map((p,i)=>({...p,t:i*20})),g).qualityOk,false);assert.equal(analyzeDrawing(g.map((p,i)=>({...p,t:i*20})),g).qualityOk,true);});

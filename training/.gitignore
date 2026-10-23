@@ -4,3 +4,5 @@ pads/
 clean_labeled.csv
 training_data.csv
 __pycache__/
+.cache/
+.venv/

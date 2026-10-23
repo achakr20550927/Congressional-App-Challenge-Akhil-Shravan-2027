@@ -1,7 +1,7 @@
 // capture.js — camera access & MediaPipe hand-tracking wrapper (PRD §9.2).
-// The WASM runtime and model are fetched from Google's CDN and cached by the
-// service worker after first load (see vite.config.js runtimeCaching), so
-// only the very first visit needs connectivity (PRD §11.5).
+// The WASM runtime and model are fetched from third-party CDNs. The app-shell
+// service worker does not cache cross-origin resources: camera setup requires
+// connectivity unless the browser happens to retain these downloads.
 
 let cachedLandmarkerPromise = null;
 
@@ -25,9 +25,7 @@ export async function initHandLandmarker(opts = {}) {
   if (cachedLandmarkerPromise) return cachedLandmarkerPromise;
 
   cachedLandmarkerPromise = (async () => {
-    const { HandLandmarker, FilesetResolver } = await import(
-      /* @vite-ignore */ "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.17/vision_bundle.mjs"
-    );
+    const { HandLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision');
     let fileset;
     try {
       fileset = await FilesetResolver.forVisionTasks(
@@ -46,7 +44,7 @@ export async function initHandLandmarker(opts = {}) {
         minTrackingConfidence: 0.7,
       });
     } catch (err) {
-      if (delegate === "GPU") {
+      if (delegate === "GPU" && fileset) {
         // Safari / older GPUs: fall back to CPU delegate per PRD §11.4 & §14.
         return await HandLandmarker.createFromOptions(fileset, {
           baseOptions: {
@@ -65,7 +63,8 @@ export async function initHandLandmarker(opts = {}) {
     }
   })();
 
-  return cachedLandmarkerPromise;
+  try { return await cachedLandmarkerPromise; }
+  catch (error) { cachedLandmarkerPromise = null; throw error; }
 }
 
 /** Human-readable classification of getUserMedia failures. */
