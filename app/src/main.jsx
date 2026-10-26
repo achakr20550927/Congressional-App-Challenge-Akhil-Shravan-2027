@@ -13,6 +13,10 @@ import '@fontsource/fraunces/latin-500.css';
 import '@fontsource/fraunces/latin-600.css';
 import '@fontsource/fraunces/latin-500-italic.css';
 import "./styles/workspace.css";
+import "./styles/classic.css";
+import "./styles/landing.css";
+
+if (location.protocol === 'neuratrack:') document.documentElement.classList.add('desktop-app');
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -26,6 +30,6 @@ createRoot(document.getElementById("root")).render(
   </StrictMode>
 );
 
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+if (import.meta.env.PROD && location.protocol !== 'neuratrack:' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }

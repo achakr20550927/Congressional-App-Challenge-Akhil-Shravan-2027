@@ -1,5 +1,6 @@
 import { BrandMark, Wordmark } from "./Brand.jsx";
 import SignalLattice from "./SignalLattice.jsx";
+import { Link } from "react-router-dom";
 
 export default function OnboardingShell({ step, eyebrow, title, body, children }) {
   return (
@@ -15,6 +16,7 @@ export default function OnboardingShell({ step, eyebrow, title, body, children }
       </section>
       <section className="onboarding-panel">
         <div className="onboarding-panel-inner">
+          <Link to="/welcome" className="onboarding-home">← Back to NeuraTrack home</Link>
           <div className="onboarding-progress" aria-label={`Setup step ${step} of 2`}>
             {[1, 2].map((item) => <i key={item} className={item <= step ? "active" : ""} />)}
             <span className="mono">STEP 0{step} / 02</span>

@@ -5,7 +5,7 @@ import { onboard,seed,noOverflow } from './helpers.js';
 test('fresh onboarding, return visit, view choice, settings and deletion',async({page})=>{
   await onboard(page);await noOverflow(page);
   await page.getByRole('button',{name:'Review',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Every recording has a story.'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Assessment overview.'})).toBeVisible();
   await page.reload();await expect(page.getByRole('button',{name:'Review',exact:true})).toHaveAttribute('aria-pressed','true');
   await page.goto('/');await expect(page).toHaveURL(/\/app$/);
   await seed(page);await page.goto('/settings');
@@ -67,6 +67,21 @@ test('workspace screens have accessible controls and responsive layouts',async({
     const scan=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze();
     expect(scan.violations.filter(v=>['critical','serious'].includes(v.impact)).map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))).toEqual([]);
   }
+});
+
+test('desktop phone preview uses the mobile layout and retains analysis',async({page},info)=>{
+  test.skip(info.project.name==='mobile','Phone layout already exercised at mobile viewport.');
+  await page.goto('/demo?preview=phone');await page.locator('.finding-card').waitFor();
+  expect((await page.locator('.app-frame').boundingBox()).width).toBeLessThanOrEqual(430);
+  await expect(page.getByRole('navigation',{name:'Mobile navigation'})).toBeVisible();
+  await page.getByRole('tab',{name:'Signal evidence'}).click();
+  await expect(page.getByText('Recording integrity',{exact:true})).toBeVisible();
+  expect(await page.locator('.app-frame').evaluate(e=>e.scrollWidth<=e.clientWidth+1)).toBe(true);
+  await page.getByRole('button',{name:'Exit phone preview'}).click();
+  expect((await page.locator('.app-frame').boundingBox()).width).toBeGreaterThan(640);
+  await onboard(page);await page.goto('/app?preview=phone');
+  await page.getByRole('navigation',{name:'Mobile navigation'}).getByRole('link',{name:'Journal'}).click();
+  await expect(page.locator('.phone-preview')).toBeVisible();
 });
 
 test('production offline shell and lazy routes work after first load',async({page,context,browserName})=>{

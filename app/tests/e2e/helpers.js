@@ -6,7 +6,7 @@ export async function onboard(page){
   await page.locator('#displayName').fill('Test participant');
   await page.getByRole('button',{name:/continue/i}).click();
   await expect(page).toHaveURL(/\/app$/);
-  await expect(page.getByRole('heading',{name:'A moment for you, Test.'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Welcome back, Test.'})).toBeVisible();
 }
 export async function seed(page){
   return page.evaluate(async()=>{

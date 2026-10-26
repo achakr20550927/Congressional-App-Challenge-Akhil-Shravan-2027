@@ -22,6 +22,6 @@ export default defineConfig({
   server: { port: 5173 },
   build: {
     target: "es2020",
-    sourcemap: true,
+    sourcemap: false,
   },
 });

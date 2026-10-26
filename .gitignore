@@ -20,4 +20,5 @@ training/pads/pads-parkinsons-disease-smartwatch-dataset-1.0.0/scripts/*.jpg
 .claude/
 .playwright-mcp/
 app/test-results/
+app/test-results-capture/
 app/playwright-report/

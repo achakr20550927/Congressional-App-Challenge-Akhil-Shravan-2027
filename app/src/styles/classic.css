@@ -1,0 +1,91 @@
+/* Original NeuraTrack visual language, with the current measurement components. */
+.onboarding-home { display:inline-block; margin-bottom:24px; color:#a9d7ee; font-size:12px; text-decoration:none; }
+.desktop-app .preview-toolbar { display:none; }
+@media(max-width:640px) {
+  .landing-hero { position:relative; display:flex; align-items:center; min-height:calc(100svh - 66px); padding:46px 8px; isolation:isolate; }
+  .landing-hero-copy { padding:0; }
+  .landing-hero .landing-visual { position:absolute; inset:0 -15px; min-height:0; height:100%; z-index:-1; border:0; border-radius:0; opacity:.65; }
+  .landing-hero .landing-visual-shade { background:linear-gradient(90deg,#030914c9,#03091455),linear-gradient(0deg,#030914,transparent 30%,transparent 70%,#030914); }
+  .landing-hero .landing-live-card,.landing-hero .landing-signal-card { display:none; }
+  .landing-hero-copy>p { color:#d0dfeb; text-shadow:0 1px 8px #030914; }
+  .landing-assurances { color:#b3cada; }
+}
+.app-presentation { background:#050b14; min-height:100dvh; }
+.app-frame { container:app-frame / inline-size; }
+.preview-toolbar { max-width:1200px; margin:auto; padding:10px 24px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #22364d; font-size:11px; }
+.preview-toolbar a { color:#9fb6c9; text-decoration:none; }
+.preview-toolbar button { color:#bde9ff; border:1px solid #35526b; background:transparent; padding:8px 12px; cursor:pointer; border-radius:2px; }
+.phone-preview { max-width:430px; height:calc(100dvh - 90px); margin:20px auto; overflow:auto; border:1px solid #35526b; position:relative; background:#050b14; }
+.classic-shell { --canvas:#050b14; --paper:#0c1929; --canvas-dim:#0a1624; --ink:#eaf4fb; --ink-soft:#9fb6c9; --green:#7cc8f0; --green-tint:#7cc8f014; --hair:#22364d; --ice:#a0d3ea; --font-display:'Fraunces',Georgia,serif; background:#050b14; }
+.classic-shell h1,.classic-shell h2 { font-family:var(--font-display); font-weight:500; letter-spacing:-.025em; }
+.classic-shell h1 { font-size:clamp(30px,4vw,44px); }
+.classic-shell .workspace-main { margin:0; }
+.classic-shell .workspace-page,.classic-shell .workspace-content>.wrap { max-width:1200px; padding:36px 24px; }
+.classic-topbar { position:sticky; top:0; z-index:40; min-height:76px; padding:12px max(24px,calc((100% - 1152px)/2)); display:flex; gap:28px; align-items:center; border-bottom:1px solid #22364d; background:#050b14f5; }
+.classic-brand { color:var(--ink); text-decoration:none; flex:none; }
+.classic-desktop-nav { display:flex; gap:22px; margin-left:auto; }
+.classic-desktop-nav a { color:#9fb6c9; font-size:12px; padding:12px 0; border-bottom:1px solid transparent; }
+.classic-desktop-nav a.active { color:#bde9ff; border-color:#7cc8f0; }
+.classic-shell .topbar-actions { gap:16px; margin-left:auto; }
+.classic-shell .local-status { color:#9fb6c9; }
+.classic-shell .view-switch { background:transparent; border-radius:2px; }
+.classic-shell .view-switch button { border-radius:0; }
+.classic-shell .view-switch button[aria-pressed=true] { background:#142b40; color:#d5efff; }
+.classic-shell :is(.panel,.card,.assessment-card,.measurement-card,.finding-card,.summary-strip,.research-banner,.research-boundary,.demo-banner,.camera-stage,.quality-explainer,.fold-grid>div,.technical-details,.status-label,.pill,.recording-icon,.research-icon,.task-icon-shell,.finding-icon,.btn,select,input,textarea) { border-radius:2px; box-shadow:none; }
+.classic-shell :is(.panel,.card,.assessment-card,.measurement-card,.summary-strip,.research-banner,.research-boundary) { background:#091725; border-color:#223b50; }
+.classic-shell .finding-card { background:#0a2032; border-color:#426c8a; }
+.classic-shell .analysis-method { margin:20px 0; border-top:1px solid #29465b; border-bottom:1px solid #29465b; padding:16px 0; }
+.classic-shell .analysis-method summary { color:#c7eaff; cursor:pointer; font-size:13px; min-height:30px; }
+.classic-shell .analysis-method p { margin:12px 0 0; font-size:13px; max-width:75ch; }
+.classic-shell .finding-retry { background:#251e19; border-color:#806044; }
+.classic-shell .finding-icon { background:transparent; color:#a0d8f5; border-color:#345774; }
+.classic-shell .next-step-panel { background:#091725; border-left:2px solid #7cc8f0; }
+.classic-shell .btn-primary { background:#c7eaff; color:#071523; border-color:#c7eaff; }
+.classic-shell .btn-primary:hover { background:#e2f4ff; }
+.classic-shell .btn-ghost { background:transparent; color:#c6dcec; border-color:#35526b; }
+.classic-shell :is(.quiet-link,.overline,.research-banner strong,.assessment-card-foot,.panel-heading a,.status-label) { color:#a9d7ee; }
+.classic-shell .overline { font-family:var(--font-mono); letter-spacing:.09em; font-size:10px; }
+.classic-shell .task-icon-shell { background:transparent; border-color:#29465b; color:#91d9fa; }
+.classic-shell .assessment-card { border-width:0 0 1px; padding:22px 18px; background:transparent; }
+.classic-shell .assessment-card h3 { font-size:16px; }
+.classic-shell .assessment-card:hover { background:#0c1b2c; border-color:#7cc8f0; transform:none; }
+.classic-shell .assessment-grid { border-top:1px solid #29465b; gap:0; }
+.classic-shell .summary-strip { border-width:1px 0; background:transparent; margin:24px 0 36px; }
+.classic-shell .summary-strip strong { color:#eaf4fb; }
+.classic-intro { border-left:2px solid #7cc8f0; padding:6px 20px; max-width:740px; }
+.classic-intro p { font-size:13px; margin:8px 0 2px; }
+.classic-shell .result-tabbar { border-color:#29465b; }
+.classic-shell .result-tabbar button[aria-selected=true] { color:#c7eaff; border-color:#7cc8f0; }
+.classic-shell .explanation-list { font-size:13px; }
+.classic-shell .workspace-footer { max-width:1200px; margin:auto; border-color:#22364d; }
+.classic-shell .empty-bars i { background:#1b4057; }
+.classic-shell .workspace-dock { background:#071321f5; border-color:#29465b; }
+.classic-shell .workspace-dock a { border-radius:0; }
+.classic-shell .workspace-dock a.active { color:#c7eaff; background:transparent; border-top:2px solid #7cc8f0; }
+.landing :is(.landing-live-card,.landing-signal-card,.landing-analysis-ui,.landing-task,.landing-privacy,.btn) { border-radius:3px; }
+@container app-frame (max-width:960px) {
+  .classic-desktop-nav { order:3; width:100%; justify-content:space-between; margin:0; gap:12px; }
+  .classic-shell .workspace-main { margin:0; }
+  .classic-topbar { padding:12px 20px; gap:12px; flex-wrap:wrap; }
+}
+@container app-frame (max-width:640px) {
+  .classic-desktop-nav { display:none; }
+  .classic-shell .workspace-page,.classic-shell .workspace-content>.wrap { padding:26px 20px; }
+  .classic-shell h1 { font-size:32px; }
+  .classic-shell h2 { font-size:25px; }
+  .classic-topbar { min-height:68px; padding:10px 18px; }
+  .classic-shell .topbar-actions { gap:6px; }
+  .classic-shell .workspace-dock { position:sticky; bottom:0; min-height:68px; }
+  .classic-shell .workspace-main { padding-bottom:0; }
+  .classic-shell .assessment-grid { grid-template-columns:1fr; }
+  .classic-shell .assessment-card { display:grid; grid-template-columns:48px 1fr; gap:5px 14px; min-height:0; padding:20px 0; }
+  .classic-shell .assessment-card-head { grid-row:1/4; display:block; }
+  .classic-shell .assessment-card h3,.classic-shell .assessment-card p { margin:0; grid-column:2; }
+  .classic-shell .assessment-card-foot { grid-column:2; margin:4px 0 0; padding:0; border:0; }
+  .classic-shell .task-duration { display:block; font-size:9px; margin-top:6px; }
+  .classic-shell .assessment-card:last-child { grid-column:auto; }
+  .classic-shell .finding-card h2 { font-size:23px; }
+  .classic-shell .finding-card p,.classic-shell .page-heading p { font-size:13px; }
+  .classic-shell .overline { font-size:9px; }
+}
+@media(max-width:640px) { .preview-toolbar { display:none; } .phone-preview { margin:0; border:0; height:auto; max-width:none; overflow:visible; } }

@@ -4,6 +4,22 @@ A responsive, installable research prototype built with React, Vite, MediaPipe, 
 
 ## Run
 
+### Standalone phone-sized window
+
+```sh
+cd "/Users/akhil/CAC Neuratrack APP/app"
+npm install
+npm start
+```
+
+This builds the React application and opens **NeuraTrack in its own 430px-wide Electron window**, with no browser tabs or development server. It starts on the looping-DNA welcome screen. `npm run app` is an alias. Close the window to quit. The first run may download Electron.
+
+The interface is the same mobile React app, not a native iOS/Android binary. The desktop app keeps its own local journal; existing browser recordings are untouched but are not automatically transferred. No cloud sync is added. Camera startup still requires the MediaPipe downloads and OS camera permission.
+
+Desktop security uses a local custom protocol, sandboxed/context-isolated rendering, no renderer Node access, restricted external links, and camera-only permission handling. See [Electron security guidance](https://www.electronjs.org/docs/latest/tutorial/security). `npm run test:desktop` builds and smoke-tests the window with an isolated temporary profile, including DNA playback and result navigation.
+
+### Browser development
+
 Use Node 24 and npm:
 
 ```sh
@@ -23,6 +39,12 @@ npm run dev
 - `/app`: personal workspace after consent and local profile setup.
 - `/history`: saved recordings, filters, comparable trends, CSV export.
 - `/export`: selected-session PDF reports.
+
+## Original styling and phone preview
+
+The app uses the original navy/ice-blue palette, serif headings, NeuraTrack wordmark, and square-edged controls. The landing page remains at `/welcome`. Updated measurements, charts, exports, and model research are preserved.
+
+On desktop, choose **Phone preview** above the app, or open `/demo?preview=phone`. This renders the working app at 430px with its mobile navigation and responsive analysis screens. **Exit phone preview** restores full width. On a phone, the mobile layout applies automatically. This preview is not a native-app build; home-screen installation uses the production PWA described below.
 
 ## Verify
 
@@ -53,6 +75,8 @@ Two-dimensional movement can reflect camera motion, voluntary movement, or landm
 The smartwatch model was trained separately: see [training documentation](../training/README.md). It is never applied to camera recordings. Legacy records are labeled and excluded from current-protocol trends.
 
 ## Installation, hosting, and offline
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for exact GitHub/Vercel and Netlify settings. Deployment files are included; production source maps are disabled. The restored welcome screen uses the original looping DNA video, a pause control, reduced-motion support, and interactive charts based on explicitly synthetic data using the same analysis components as the app.
 
 `npm run build` creates `dist/`. Serve it over HTTPS with unknown non-asset routes rewritten to `/index.html`. Camera access requires a secure origin (localhost is allowed for desktop development). Opening an HTTP LAN IP on a phone does not reliably permit camera access; use an HTTPS deployment for real-device tests.
 
